@@ -1,0 +1,5 @@
+MODULE PRODUCT
+
+POST /product - criar um produto
+GET /product - listagem
+GET /product/[filter] - filtrar produtos
