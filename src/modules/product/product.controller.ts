@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import CreateProductDTO from './dtos/create-product.dto';
 import { ProductService } from './product.service';
 import CategoryService from './category.service';
@@ -11,9 +11,11 @@ import CreateSizeDTO from './dtos/create-size.dto';
 import CreateColorDTO from './dtos/create-color.dto';
 import ColorService from './color.service';
 import FilterProductsDTO from './dtos/filter-products.dto';
+import { AdminGuard } from 'src/guards/admin.guard';
 
 @ApiTags('Product')
 @Controller('product')
+@ApiBearerAuth()
 export class ProductController {
   constructor(
     private readonly productService: ProductService,
@@ -24,6 +26,7 @@ export class ProductController {
   ) {}
 
   @Post()
+  @UseGuards(AdminGuard)
   async create(@Body() body: CreateProductDTO) {
     return await this.productService.create(body);
   }
@@ -34,6 +37,7 @@ export class ProductController {
   }
 
   @Post('category')
+  @UseGuards(AdminGuard)
   async createCategory(@Body() body: CreateCategoryDTO) {
     return await this.categoryService.create(body);
   }
@@ -44,6 +48,7 @@ export class ProductController {
   }
 
   @Post('gender')
+  @UseGuards(AdminGuard)
   async createGender(@Body() body: CreateGenderDTO) {
     return await this.genderService.create(body);
   }
@@ -54,6 +59,7 @@ export class ProductController {
   }
 
   @Post('size')
+  @UseGuards(AdminGuard)
   async createSize(@Body() body: CreateSizeDTO) {
     return await this.sizeService.create(body);
   }
@@ -64,6 +70,7 @@ export class ProductController {
   }
 
   @Post('color')
+  @UseGuards(AdminGuard)
   async createColor(@Body() body: CreateColorDTO) {
     return await this.colorService.create(body);
   }
