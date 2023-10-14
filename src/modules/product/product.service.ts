@@ -1,8 +1,13 @@
-import { Injectable, UnprocessableEntityException } from '@nestjs/common';
+import {
+  Injectable,
+  UnprocessableEntityException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/services/prisma.service';
 import CreateProductDTO from './dtos/create-product.dto';
 import productSchema from 'src/schemas/product.schema';
 import FilterProductsDTO from './dtos/filter-products.dto';
+import AddToCartDTO from './dtos/add-to-cart.dto';
 
 @Injectable()
 export class ProductService {
@@ -171,6 +176,139 @@ export class ProductService {
             size: true,
           },
         },
+      },
+    });
+  }
+
+  async favoriteProduct(productId: string, userId: string) {
+    const product = await this.client.product.findUnique({
+      where: {
+        id: productId,
+      },
+    });
+
+    if (!product) {
+      throw new BadRequestException('Product not found');
+    }
+
+    await this.client.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        favorites: {
+          connect: {
+            id: product.id,
+          },
+        },
+      },
+    });
+  }
+
+  async unfavoriteProduct(productId: string, userId: string) {
+    const product = await this.client.product.findUnique({
+      where: {
+        id: productId,
+      },
+    });
+
+    if (!product) {
+      throw new BadRequestException('Product not found');
+    }
+
+    await this.client.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        favorites: {
+          disconnect: {
+            id: product.id,
+          },
+        },
+      },
+    });
+  }
+
+  async getCart(userId: string) {
+    return await this.client.cart.findMany({
+      where: {
+        userId,
+        // todo: na listagem não poderá aparecer os que tem um id do pedido
+      },
+    });
+  }
+
+  async addToCart(data: AddToCartDTO, userId: string) {
+    const product = await this.client.product.findUnique({
+      where: {
+        id: data.productId,
+        quantities: {
+          some: {
+            sizeId: data.sizeId,
+          },
+        },
+        colors: {
+          some: {
+            id: data.colorId,
+          },
+        },
+      },
+      include: {
+        quantities: true,
+      },
+    });
+
+    if (!product) {
+      throw new BadRequestException('Product not found');
+    } else if (product.quantities[0].count < data.quantity) {
+      throw new BadRequestException(
+        'Quantity of products available is not enough',
+      );
+    }
+
+    await this.client.cart.create({
+      data: {
+        quantity: data.quantity,
+        product: {
+          connect: {
+            id: data.productId,
+          },
+        },
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
+        color: {
+          connect: {
+            id: data.colorId,
+          },
+        },
+        size: {
+          connect: {
+            id: data.sizeId,
+          },
+        },
+      },
+    });
+  }
+
+  async removeFromCart(productId: string, userId: string) {
+    const item = await this.client.cart.findFirst({
+      where: {
+        productId,
+        userId,
+      },
+    });
+
+    if (!item) {
+      throw new BadRequestException('Item not found');
+    }
+
+    await this.client.cart.delete({
+      where: {
+        id: item.id,
       },
     });
   }

@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  UseGuards,
+  Req,
+  Param,
+  HttpCode,
+} from '@nestjs/common';
+import { Request } from 'express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import CreateProductDTO from './dtos/create-product.dto';
 import { ProductService } from './product.service';
@@ -12,6 +23,8 @@ import CreateColorDTO from './dtos/create-color.dto';
 import ColorService from './color.service';
 import FilterProductsDTO from './dtos/filter-products.dto';
 import { AdminGuard } from 'src/guards/admin.guard';
+import { AuthGuard } from 'src/guards/auth.guard';
+import AddToCartDTO from './dtos/add-to-cart.dto';
 
 @ApiTags('Product')
 @Controller('product')
@@ -78,5 +91,58 @@ export class ProductController {
   @Get('color')
   async listColor() {
     return await this.colorService.list();
+  }
+
+  @Post('favorite/:productId')
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  async favoriteProduct(
+    @Req() req: Request,
+    @Param('productId') productId: string,
+  ) {
+    const user = req['user'] as { id: string; email: string };
+
+    await this.productService.favoriteProduct(productId, user.id);
+  }
+
+  @Post('unfavorite/:productId')
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  async unfavoriteProduct(
+    @Req() req: Request,
+    @Param('productId') productId: string,
+  ) {
+    const user = req['user'] as { id: string; email: string };
+
+    await this.productService.unfavoriteProduct(productId, user.id);
+  }
+
+  @Get('cart')
+  @UseGuards(AuthGuard)
+  async getCart(@Req() req: Request) {
+    const user = req['user'] as { id: string; email: string };
+
+    return await this.productService.getCart(user.id);
+  }
+
+  @Post('cart/add')
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  async addToCart(@Req() req: Request, @Body() body: AddToCartDTO) {
+    const user = req['user'] as { id: string; email: string };
+
+    await this.productService.addToCart(body, user.id);
+  }
+
+  @Post('cart/remove/:productId')
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  async removeFromCart(
+    @Req() req: Request,
+    @Param('productId') productId: string,
+  ) {
+    const user = req['user'] as { id: string; email: string };
+
+    await this.productService.removeFromCart(productId, user.id);
   }
 }

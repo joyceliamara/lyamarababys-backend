@@ -8,7 +8,7 @@ import { verify } from 'jsonwebtoken';
 import { PrismaService } from 'src/services/prisma.service';
 
 @Injectable()
-export class AdminGuard implements CanActivate {
+export class AuthGuard implements CanActivate {
   constructor(private readonly prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -24,19 +24,9 @@ export class AdminGuard implements CanActivate {
     try {
       const payload = verify(token, process.env.JWT_KEY);
 
-      const userId = payload['id'];
-
-      user = await this.prisma.user.findUnique({
-        where: {
-          id: userId,
-        },
-      });
+      user = payload;
     } catch (err) {
       throw new UnauthorizedException('Invalid token');
-    }
-
-    if (user.role !== 'ADMIN') {
-      throw new UnauthorizedException('User is not admin');
     }
 
     request['user'] = user;
