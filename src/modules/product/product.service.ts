@@ -234,12 +234,13 @@ export class ProductService {
     return await this.client.cart.findMany({
       where: {
         userId,
-        // todo: na listagem não poderá aparecer os que tem um id do pedido
+        orderId: null,
       },
     });
   }
 
   async addToCart(data: AddToCartDTO, userId: string) {
+    // todo: na hora de adicionar o item precisa buscar se já existe e só aumentar a quantidade
     const product = await this.client.product.findUnique({
       where: {
         id: data.productId,
