@@ -26,6 +26,7 @@
     "@nestjs/swagger": "^7.1.11",
     "@prisma/client": "^5.2.0",
     "bcrypt": "^5.1.1",
+    "cpf-cnpj-validator": "^1.0.3",
     "jsonwebtoken": "^9.0.2",
     "prisma": "^5.2.0",
     "reflect-metadata": "^0.1.13",

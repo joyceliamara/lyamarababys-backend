@@ -9,6 +9,9 @@ import userSchema from 'src/schemas/user.schema';
 import { compareSync, hashSync } from 'bcrypt';
 import { sign } from 'jsonwebtoken';
 import AuthUserDTO from './dtos/auth-user.dto';
+import UpdateRegisterDTO from './dtos/update-register.dto';
+import contactSchema from 'src/schemas/contact.schema';
+import addressSchema from 'src/schemas/address.schema';
 
 @Injectable()
 export class UserService {
@@ -82,5 +85,69 @@ export class UserService {
       user,
       token: sign({ id: user.id, email: user.email }, process.env.JWT_KEY),
     };
+  }
+
+  async updateRegister(userId: string, data: UpdateRegisterDTO) {
+    const contactValidation = contactSchema.safeParse(data.contact);
+    const addressValidation = addressSchema.safeParse(data.address);
+
+    if (contactValidation.success === false) {
+      throw new UnprocessableEntityException(contactValidation.error.issues);
+    } else if (addressValidation.success === false) {
+      throw new UnprocessableEntityException(addressValidation.error.issues);
+    }
+
+    const [contact, address] = await Promise.all([
+      this.prisma.contact.findFirst({
+        where: {
+          user: {
+            some: {
+              id: userId,
+            },
+          },
+        },
+      }),
+      this.prisma.address.findFirst({
+        where: {
+          userId,
+        },
+      }),
+    ]);
+
+    return await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        contact: {
+          ...(contact
+            ? {
+                update: {
+                  where: {
+                    id: contact.id,
+                  },
+                  data: {
+                    ...contactValidation.data,
+                  },
+                },
+              }
+            : {
+                create: {
+                  ...contactValidation.data,
+                },
+              }),
+        },
+        addresses: {
+          updateMany: {
+            where: {
+              userId,
+            },
+            data: {
+              ...addressValidation.data,
+            },
+          },
+        },
+      },
+    });
   }
 }
