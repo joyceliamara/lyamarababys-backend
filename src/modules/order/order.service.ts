@@ -24,6 +24,10 @@ export class OrderService {
       },
     });
 
+    if (!items.length) {
+      throw new BadRequestException('The cart is empty.');
+    }
+
     const productIds = items.map((i) => i.productId);
 
     const products = await this.client.product.findMany({
@@ -37,6 +41,14 @@ export class OrderService {
       },
     });
 
+    const quantitiesToUpdate: QuantitiesToUpdate[] = [];
+
+    interface QuantitiesToUpdate {
+      productId: string;
+      sizeId: string;
+      quantity: number;
+    }
+
     for (const product of products) {
       const item = items.find((i) => i.productId === product.id);
       const quantities = product.quantities.find(
@@ -44,12 +56,18 @@ export class OrderService {
       ).count;
 
       if (item.quantity > quantities) {
-        throw new BadRequestException(
-          `Quantity unavailable for ${item.product.name} product`,
-        );
+        throw new BadRequestException({
+          message: `Quantity unavailable for ${item.product.name} product`,
+          productId: item.id,
+        });
       }
 
-      // todo: remover a quantidade de itens que foram comprados da tabela quantity
+      quantitiesToUpdate.push({
+        productId: product.id,
+        sizeId: item.sizeId,
+        quantity: quantities,
+      });
+      // todo: colorId influencia na quantidade?
     }
 
     const total = items.reduce((prev, act) => {
@@ -80,6 +98,22 @@ export class OrderService {
         orderId: order.id,
       },
     });
+
+    await Promise.all(
+      quantitiesToUpdate.map((i) => {
+        return this.client.quantity.updateMany({
+          where: {
+            productId: i.productId,
+            sizeId: i.sizeId,
+          },
+          data: {
+            count: {
+              decrement: i.quantity,
+            },
+          },
+        });
+      }),
+    );
 
     return order;
   }

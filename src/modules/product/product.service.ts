@@ -240,7 +240,6 @@ export class ProductService {
   }
 
   async addToCart(data: AddToCartDTO, userId: string) {
-    // todo: na hora de adicionar o item precisa buscar se já existe e só aumentar a quantidade
     const product = await this.client.product.findUnique({
       where: {
         id: data.productId,
@@ -268,31 +267,74 @@ export class ProductService {
       );
     }
 
-    await this.client.cart.create({
-      data: {
-        quantity: data.quantity,
-        product: {
-          connect: {
-            id: data.productId,
-          },
-        },
-        user: {
-          connect: {
-            id: userId,
-          },
-        },
-        color: {
-          connect: {
-            id: data.colorId,
-          },
-        },
-        size: {
-          connect: {
-            id: data.sizeId,
-          },
-        },
+    const existsItemCart = await this.client.cart.findFirst({
+      where: {
+        userId,
+        productId: product.id,
+        orderId: null,
       },
     });
+
+    if (existsItemCart) {
+      const availableQuantities = product.quantities.find(
+        (i) => i.sizeId === existsItemCart.sizeId,
+      ).count;
+
+      if (existsItemCart.quantity + data.quantity > availableQuantities) {
+        throw new BadRequestException({
+          message: `Quantity unavailable for ${product.name} product`,
+          productId: product.id,
+        });
+      }
+
+      await this.client.cart.update({
+        where: {
+          id: existsItemCart.id,
+        },
+        data: {
+          quantity: {
+            increment: data.quantity,
+          },
+        },
+      });
+    } else {
+      const availableQuantities = product.quantities.find(
+        (i) => i.sizeId === existsItemCart.sizeId,
+      ).count;
+
+      if (data.quantity > availableQuantities) {
+        throw new BadRequestException({
+          message: `Quantity unavailable for ${product.name} product`,
+          productId: product.id,
+        });
+      }
+
+      await this.client.cart.create({
+        data: {
+          quantity: data.quantity,
+          product: {
+            connect: {
+              id: data.productId,
+            },
+          },
+          user: {
+            connect: {
+              id: userId,
+            },
+          },
+          color: {
+            connect: {
+              id: data.colorId,
+            },
+          },
+          size: {
+            connect: {
+              id: data.sizeId,
+            },
+          },
+        },
+      });
+    }
   }
 
   async removeFromCart(productId: string, userId: string) {

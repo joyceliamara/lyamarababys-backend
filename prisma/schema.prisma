@@ -92,9 +92,8 @@ model User {
   favorites Product[]
   cart      Cart[]
   order     Order[]
-  contact   Contact?  @relation(fields: [contactId], references: [id])
-  contactId String?
-  addresses Address[]
+  contact   Contact?
+  address   Address?
 
   @@map("users")
 }
@@ -111,7 +110,8 @@ model Contact {
   phone     String?  @unique
   cpf       String?  @unique
   bornDate  DateTime @map("born_date")
-  user      User[]
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -127,10 +127,10 @@ model Address {
   neighborhood String
   city         String
   state        String
+  user         User?    @relation(fields: [userId], references: [id])
+  userId       String?  @unique
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-  user         User?    @relation(fields: [userId], references: [id])
-  userId       String?
 
   @@map("addresses")
 }

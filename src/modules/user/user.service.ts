@@ -97,56 +97,78 @@ export class UserService {
       throw new UnprocessableEntityException(addressValidation.error.issues);
     }
 
-    const [contact, address] = await Promise.all([
-      this.prisma.contact.findFirst({
-        where: {
-          user: {
-            some: {
-              id: userId,
-            },
-          },
-        },
-      }),
-      this.prisma.address.findFirst({
-        where: {
-          userId,
-        },
-      }),
-    ]);
-
     return await this.prisma.user.update({
       where: {
         id: userId,
       },
       data: {
-        contact: {
-          ...(contact
-            ? {
-                update: {
-                  where: {
-                    id: contact.id,
-                  },
-                  data: {
-                    ...contactValidation.data,
-                  },
-                },
-              }
-            : {
-                create: {
-                  ...contactValidation.data,
-                },
-              }),
-        },
-        addresses: {
-          updateMany: {
+        address: {
+          upsert: {
             where: {
               userId,
             },
-            data: {
+            create: {
+              ...(addressValidation.data as any),
+            },
+            update: {
               ...addressValidation.data,
             },
           },
         },
+        contact: {
+          upsert: {
+            where: {
+              userId,
+            },
+            create: {
+              ...(contactValidation.data as any),
+            },
+            update: {
+              ...contactValidation.data,
+            },
+          },
+        },
+      },
+      select: {
+        address: {
+          select: {
+            cep: true,
+            city: true,
+            complement: true,
+            createdAt: false,
+            id: false,
+            neighborhood: true,
+            number: true,
+            state: true,
+            street: true,
+            updatedAt: false,
+            user: false,
+            userId: false,
+          },
+        },
+        cart: false,
+        contact: {
+          select: {
+            bornDate: true,
+            cpf: true,
+            createdAt: false,
+            id: false,
+            name: true,
+            surname: true,
+            phone: true,
+            updatedAt: false,
+            user: false,
+            userId: false,
+          },
+        },
+        createdAt: false,
+        email: false,
+        favorites: false,
+        id: false,
+        order: false,
+        password: false,
+        role: false,
+        updatedAt: false,
       },
     });
   }
