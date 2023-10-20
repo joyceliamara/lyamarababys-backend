@@ -3,7 +3,7 @@ import {
   BadRequestException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/services/prisma.service';
+import { PrismaService } from '../../services/prisma.service';
 import UpdateOrderStatusDTO from './dtos/update-order-status.dto';
 import { Status } from '@prisma/client';
 import UpdateOrderTrackingCodeDTO from './dtos/update-order-traking-code.dto';

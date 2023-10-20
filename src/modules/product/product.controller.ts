@@ -22,9 +22,9 @@ import CreateSizeDTO from './dtos/create-size.dto';
 import CreateColorDTO from './dtos/create-color.dto';
 import ColorService from './color.service';
 import FilterProductsDTO from './dtos/filter-products.dto';
-import { AdminGuard } from 'src/guards/admin.guard';
-import { AuthGuard } from 'src/guards/auth.guard';
 import AddToCartDTO from './dtos/add-to-cart.dto';
+import { AdminGuard } from '../../guards/admin.guard';
+import { AuthGuard } from '../../guards/auth.guard';
 
 @ApiTags('Product')
 @Controller('product')

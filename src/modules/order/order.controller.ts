@@ -9,11 +9,11 @@ import {
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { Request } from 'express';
-import { AuthGuard } from 'src/guards/auth.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { AdminGuard } from 'src/guards/admin.guard';
 import UpdateOrderStatusDTO from './dtos/update-order-status.dto';
 import UpdateOrderTrackingCodeDTO from './dtos/update-order-traking-code.dto';
+import { AdminGuard } from '../../guards/admin.guard';
+import { AuthGuard } from '../../guards/auth.guard';
 
 @Controller('order')
 @ApiBearerAuth()

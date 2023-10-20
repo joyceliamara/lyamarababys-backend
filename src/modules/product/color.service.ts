@@ -1,7 +1,7 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import CreateColorDTO from './dtos/create-color.dto';
-import { PrismaService } from 'src/services/prisma.service';
-import colorSchema from 'src/schemas/color.schema';
+import { PrismaService } from '../../services/prisma.service';
+import colorSchema from '../../schemas/color.schema';
 
 @Injectable()
 export default class ColorService {

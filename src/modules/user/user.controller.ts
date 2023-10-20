@@ -3,9 +3,9 @@ import { Request } from 'express';
 import { UserService } from './user.service';
 import CreateUserDTO from './dtos/create-user.dto';
 import AuthUserDTO from './dtos/auth-user.dto';
-import { AuthGuard } from 'src/guards/auth.guard';
 import UpdateRegisterDTO from './dtos/update-register.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '../../guards/auth.guard';
 
 @Controller('user')
 @ApiBearerAuth()

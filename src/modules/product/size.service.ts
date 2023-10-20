@@ -1,7 +1,7 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
-import { PrismaService } from 'src/services/prisma.service';
+import { PrismaService } from '../../services/prisma.service';
 import CreateSizeDTO from './dtos/create-size.dto';
-import sizeSchema from 'src/schemas/size.schema';
+import sizeSchema from '../../schemas/size.schema';
 
 @Injectable()
 export default class SizeService {

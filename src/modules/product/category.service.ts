@@ -3,9 +3,9 @@ import {
   Injectable,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/services/prisma.service';
+import { PrismaService } from '../../services/prisma.service';
 import CreateCategoryDTO from './dtos/create-category.dto';
-import categorySchema from 'src/schemas/category.schema';
+import categorySchema from '../../schemas/category.schema';
 
 @Injectable()
 export default class CategoryService {

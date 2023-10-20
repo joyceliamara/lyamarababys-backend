@@ -3,11 +3,11 @@ import {
   UnprocessableEntityException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/services/prisma.service';
+import { PrismaService } from '../../services/prisma.service';
 import CreateProductDTO from './dtos/create-product.dto';
-import productSchema from 'src/schemas/product.schema';
 import FilterProductsDTO from './dtos/filter-products.dto';
 import AddToCartDTO from './dtos/add-to-cart.dto';
+import productSchema from '../../schemas/product.schema';
 
 @Injectable()
 export class ProductService {

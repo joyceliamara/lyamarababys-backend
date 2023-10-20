@@ -3,15 +3,15 @@ import {
   UnprocessableEntityException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/services/prisma.service';
+import { PrismaService } from '../../services/prisma.service';
 import CreateUserDTO from './dtos/create-user.dto';
-import userSchema from 'src/schemas/user.schema';
 import { compareSync, hashSync } from 'bcrypt';
 import { sign } from 'jsonwebtoken';
 import AuthUserDTO from './dtos/auth-user.dto';
 import UpdateRegisterDTO from './dtos/update-register.dto';
-import contactSchema from 'src/schemas/contact.schema';
-import addressSchema from 'src/schemas/address.schema';
+import userSchema from '../../schemas/user.schema';
+import contactSchema from '../../schemas/contact.schema';
+import addressSchema from '../../schemas/address.schema';
 
 @Injectable()
 export class UserService {
