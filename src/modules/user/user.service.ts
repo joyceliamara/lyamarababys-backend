@@ -24,7 +24,7 @@ export class UserService {
       throw new UnprocessableEntityException(validation.error.issues);
     }
 
-    const { name, email, password } = validation.data;
+    const { email, password } = validation.data;
 
     const user = await this.prisma.user.findUnique({
       where: {
@@ -33,19 +33,21 @@ export class UserService {
     });
 
     if (user) {
-      throw new UnprocessableEntityException('User already exists');
+      throw new UnprocessableEntityException({
+        message: 'User already exists',
+        path: ['email'],
+        statusCode: 422,
+      });
     }
 
     const newUser = await this.prisma.user.create({
       data: {
-        name,
         email,
         password: hashSync(password, 10),
       },
       select: {
         email: true,
         id: true,
-        name: true,
         password: false,
         createdAt: false,
         updatedAt: false,
@@ -66,7 +68,6 @@ export class UserService {
       select: {
         email: true,
         id: true,
-        name: true,
         password: true,
         createdAt: false,
         updatedAt: false,
@@ -74,9 +75,15 @@ export class UserService {
     });
 
     if (!user) {
-      throw new BadRequestException('User not found');
+      throw new BadRequestException({
+        message: 'User not found',
+        path: ['email'],
+      });
     } else if (!compareSync(data.password, user.password)) {
-      throw new BadRequestException('Invalid password');
+      throw new BadRequestException({
+        message: 'Invalid password',
+        path: ['password'],
+      });
     }
 
     delete user.password;
