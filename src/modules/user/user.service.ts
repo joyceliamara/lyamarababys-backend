@@ -166,6 +166,12 @@ export class UserService {
       throw new UnprocessableEntityException(validation.error.issues);
     }
 
+    const addresses = await this.prisma.address.findMany({
+      where: {
+        userId,
+      },
+    });
+
     return await this.prisma.address.create({
       data: {
         user: {
@@ -174,6 +180,7 @@ export class UserService {
           },
         },
         ...(validation.data as any),
+        main: addresses.length === 0,
       },
     });
   }
@@ -208,6 +215,47 @@ export class UserService {
         ...(validation.data as any),
       },
     });
+  }
+
+  async setMainAddress(addressId: string, userId: string) {
+    const address = await this.prisma.address.findUnique({
+      where: {
+        id: addressId,
+        userId,
+      },
+    });
+
+    if (!address) {
+      throw new BadRequestException('Address not found');
+    }
+
+    const oldMain = await this.prisma.address.findFirst({
+      where: {
+        userId,
+        main: true,
+      },
+    });
+
+    const [newMain] = await Promise.all([
+      this.prisma.address.update({
+        where: {
+          id: addressId,
+        },
+        data: {
+          main: true,
+        },
+      }),
+      this.prisma.address.update({
+        where: {
+          id: oldMain.id,
+        },
+        data: {
+          main: false,
+        },
+      }),
+    ]);
+
+    return newMain;
   }
 
   async deleteAddress(addressId: string, userId: string) {

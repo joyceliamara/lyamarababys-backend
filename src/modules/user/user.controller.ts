@@ -8,6 +8,7 @@ import {
   UseGuards,
   Req,
   Param,
+  Patch,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import CreateUserDTO from './dtos/create-user.dto';
@@ -71,6 +72,15 @@ export class UserController {
     @Body() body: UpdateAddressDTO,
   ) {
     return await this.userService.updateAddress(addressId, req.user.id, body);
+  }
+
+  @Patch('address/:addressId/set-main')
+  @UseGuards(AuthGuard)
+  async setMainAddress(
+    @Param('addressId') addressId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return await this.userService.setMainAddress(addressId, req.user.id);
   }
 
   @Delete('address/:addressId')
