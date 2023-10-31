@@ -93,7 +93,7 @@ model User {
   cart      Cart[]
   order     Order[]
   contact   Contact?
-  address   Address?
+  address   Address[]
 
   @@map("users")
 }

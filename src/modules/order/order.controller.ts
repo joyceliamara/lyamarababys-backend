@@ -14,6 +14,7 @@ import UpdateOrderStatusDTO from './dtos/update-order-status.dto';
 import UpdateOrderTrackingCodeDTO from './dtos/update-order-traking-code.dto';
 import { AdminGuard } from '../../guards/admin.guard';
 import { AuthGuard } from '../../guards/auth.guard';
+import AuthenticatedRequest from '../../interfaces/authenticated-request';
 
 @Controller('order')
 @ApiBearerAuth()
@@ -22,8 +23,8 @@ export class OrderController {
 
   @Post()
   @UseGuards(AuthGuard)
-  async create(@Req() req: Request) {
-    const user = req['user'] as { id: string; email: string };
+  async create(@Req() req: AuthenticatedRequest) {
+    const { user } = req;
 
     return await this.orderService.create(user.id);
   }

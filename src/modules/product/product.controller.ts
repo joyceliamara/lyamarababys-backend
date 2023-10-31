@@ -25,6 +25,7 @@ import FilterProductsDTO from './dtos/filter-products.dto';
 import AddToCartDTO from './dtos/add-to-cart.dto';
 import { AdminGuard } from '../../guards/admin.guard';
 import { AuthGuard } from '../../guards/auth.guard';
+import AuthenticatedRequest from '../../interfaces/authenticated-request';
 
 @ApiTags('Product')
 @Controller('product')
@@ -97,10 +98,10 @@ export class ProductController {
   @HttpCode(200)
   @UseGuards(AuthGuard)
   async favoriteProduct(
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Param('productId') productId: string,
   ) {
-    const user = req['user'] as { id: string; email: string };
+    const { user } = req;
 
     await this.productService.favoriteProduct(productId, user.id);
   }
@@ -109,18 +110,18 @@ export class ProductController {
   @HttpCode(200)
   @UseGuards(AuthGuard)
   async unfavoriteProduct(
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Param('productId') productId: string,
   ) {
-    const user = req['user'] as { id: string; email: string };
+    const { user } = req;
 
     await this.productService.unfavoriteProduct(productId, user.id);
   }
 
   @Get('cart')
   @UseGuards(AuthGuard)
-  async getCart(@Req() req: Request) {
-    const user = req['user'] as { id: string; email: string };
+  async getCart(@Req() req: AuthenticatedRequest) {
+    const { user } = req;
 
     return await this.productService.getCart(user.id);
   }
@@ -128,8 +129,11 @@ export class ProductController {
   @Post('cart/add')
   @HttpCode(200)
   @UseGuards(AuthGuard)
-  async addToCart(@Req() req: Request, @Body() body: AddToCartDTO) {
-    const user = req['user'] as { id: string; email: string };
+  async addToCart(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: AddToCartDTO,
+  ) {
+    const { user } = req;
 
     await this.productService.addToCart(body, user.id);
   }
@@ -138,10 +142,10 @@ export class ProductController {
   @HttpCode(200)
   @UseGuards(AuthGuard)
   async removeFromCart(
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Param('productId') productId: string,
   ) {
-    const user = req['user'] as { id: string; email: string };
+    const { user } = req;
 
     await this.productService.removeFromCart(productId, user.id);
   }

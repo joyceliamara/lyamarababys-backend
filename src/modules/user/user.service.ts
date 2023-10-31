@@ -8,10 +8,12 @@ import CreateUserDTO from './dtos/create-user.dto';
 import { compareSync, hashSync } from 'bcrypt';
 import { sign } from 'jsonwebtoken';
 import AuthUserDTO from './dtos/auth-user.dto';
-import UpdateRegisterDTO from './dtos/update-register.dto';
+import UpdateRegisterDTO from './dtos/update-contact.dto';
 import userSchema from '../../schemas/user.schema';
 import contactSchema from '../../schemas/contact.schema';
+import CreateAddressDTO from './dtos/create-address.dto';
 import addressSchema from '../../schemas/address.schema';
+import UpdateAddressDTO from './dtos/update-address.dto';
 
 @Injectable()
 export class UserService {
@@ -94,14 +96,11 @@ export class UserService {
     };
   }
 
-  async updateRegister(userId: string, data: UpdateRegisterDTO) {
-    const contactValidation = contactSchema.safeParse(data.contact);
-    const addressValidation = addressSchema.safeParse(data.address);
+  async updateContact(userId: string, data: UpdateRegisterDTO) {
+    const validation = contactSchema.safeParse(data);
 
-    if (contactValidation.success === false) {
-      throw new UnprocessableEntityException(contactValidation.error.issues);
-    } else if (addressValidation.success === false) {
-      throw new UnprocessableEntityException(addressValidation.error.issues);
+    if (validation.success === false) {
+      throw new UnprocessableEntityException(validation.error.issues);
     }
 
     return await this.prisma.user.update({
@@ -109,50 +108,22 @@ export class UserService {
         id: userId,
       },
       data: {
-        address: {
-          upsert: {
-            where: {
-              userId,
-            },
-            create: {
-              ...(addressValidation.data as any),
-            },
-            update: {
-              ...addressValidation.data,
-            },
-          },
-        },
         contact: {
           upsert: {
             where: {
               userId,
             },
             create: {
-              ...(contactValidation.data as any),
+              ...(validation.data as any),
             },
             update: {
-              ...contactValidation.data,
+              ...validation.data,
             },
           },
         },
       },
       select: {
-        address: {
-          select: {
-            cep: true,
-            city: true,
-            complement: true,
-            createdAt: false,
-            id: false,
-            neighborhood: true,
-            number: true,
-            state: true,
-            street: true,
-            updatedAt: false,
-            user: false,
-            userId: false,
-          },
-        },
+        address: false,
         cart: false,
         contact: {
           select: {
@@ -176,6 +147,84 @@ export class UserService {
         password: false,
         role: false,
         updatedAt: false,
+      },
+    });
+  }
+
+  async getAddresses(userId: string) {
+    return await this.prisma.address.findMany({
+      where: {
+        userId,
+      },
+    });
+  }
+
+  async createAddress(data: CreateAddressDTO, userId: string) {
+    const validation = addressSchema.safeParse(data);
+
+    if (validation.success === false) {
+      throw new UnprocessableEntityException(validation.error.issues);
+    }
+
+    return await this.prisma.address.create({
+      data: {
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
+        ...(validation.data as any),
+      },
+    });
+  }
+
+  async updateAddress(
+    addressId: string,
+    userId: string,
+    data: UpdateAddressDTO,
+  ) {
+    const address = await this.prisma.address.findUnique({
+      where: {
+        id: addressId,
+        userId,
+      },
+    });
+
+    if (!address) {
+      throw new BadRequestException('Address not found');
+    }
+
+    const validation = addressSchema.safeParse(data);
+
+    if (validation.success === false) {
+      throw new UnprocessableEntityException(validation.error.issues);
+    }
+
+    return await this.prisma.address.update({
+      where: {
+        id: addressId,
+      },
+      data: {
+        ...(validation.data as any),
+      },
+    });
+  }
+
+  async deleteAddress(addressId: string, userId: string) {
+    const address = await this.prisma.address.findUnique({
+      where: {
+        id: addressId,
+        userId,
+      },
+    });
+
+    if (!address) {
+      throw new BadRequestException('Address not found');
+    }
+
+    await this.prisma.address.delete({
+      where: {
+        id: addressId,
       },
     });
   }

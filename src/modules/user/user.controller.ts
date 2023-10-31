@@ -1,13 +1,26 @@
-import { Controller, Post, Body, Put, UseGuards, Req } from '@nestjs/common';
-import { Request } from 'express';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Put,
+  Delete,
+  UseGuards,
+  Req,
+  Param,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import CreateUserDTO from './dtos/create-user.dto';
 import AuthUserDTO from './dtos/auth-user.dto';
-import UpdateRegisterDTO from './dtos/update-register.dto';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import UpdateContactDTO from './dtos/update-contact.dto';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../../guards/auth.guard';
+import CreateAddressDTO from './dtos/create-address.dto';
+import AuthenticatedRequest from '../../interfaces/authenticated-request';
+import UpdateAddressDTO from './dtos/update-address.dto';
 
 @Controller('user')
+@ApiTags('User')
 @ApiBearerAuth()
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -22,11 +35,50 @@ export class UserController {
     return await this.userService.auth(body);
   }
 
-  @Put('register')
+  @Put('contact')
   @UseGuards(AuthGuard)
-  async updateRegister(@Req() req: Request, @Body() data: UpdateRegisterDTO) {
-    const user = req['user'] as { id: string; email: string };
+  async updateContact(
+    @Req() req: AuthenticatedRequest,
+    @Body() data: UpdateContactDTO,
+  ) {
+    const { user } = req;
 
-    return await this.userService.updateRegister(user.id, data);
+    return await this.userService.updateContact(user.id, data);
+  }
+
+  @Get('address')
+  @UseGuards(AuthGuard)
+  async getAddresses(@Req() req: AuthenticatedRequest) {
+    return this.userService.getAddresses(req.user.id);
+  }
+
+  @Post('address')
+  @UseGuards(AuthGuard)
+  async createAddress(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: CreateAddressDTO,
+  ) {
+    const { user } = req;
+
+    return await this.userService.createAddress(body, user.id);
+  }
+
+  @Put('address/:addressId')
+  @UseGuards(AuthGuard)
+  async updateAddress(
+    @Param('addressId') addressId: string,
+    @Req() req: AuthenticatedRequest,
+    @Body() body: UpdateAddressDTO,
+  ) {
+    return await this.userService.updateAddress(addressId, req.user.id, body);
+  }
+
+  @Delete('address/:addressId')
+  @UseGuards(AuthGuard)
+  async deleteAddress(
+    @Param('addressId') addressId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    await this.userService.deleteAddress(addressId, req.user.id);
   }
 }
