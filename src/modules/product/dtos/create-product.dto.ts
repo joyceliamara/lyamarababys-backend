@@ -8,12 +8,23 @@ class Quantity {
   count: number;
 }
 
+class Image {
+  @ApiProperty()
+  url: string;
+
+  @ApiProperty()
+  main: boolean;
+}
+
 export default class CreateProductDTO {
   @ApiProperty()
   sku: string;
 
   @ApiProperty()
   name: string;
+
+  @ApiProperty()
+  subtitle: string;
 
   @ApiProperty()
   price: number;
@@ -32,4 +43,7 @@ export default class CreateProductDTO {
 
   @ApiProperty({ type: Quantity, isArray: true })
   quantities: Quantity[];
+
+  @ApiProperty({ type: Image, isArray: true })
+  images: Image[];
 }

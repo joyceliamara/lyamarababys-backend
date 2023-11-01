@@ -1,13 +1,19 @@
+'use client';
+
 import {
   Injectable,
   UnprocessableEntityException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../services/prisma.service';
 import CreateProductDTO from './dtos/create-product.dto';
 import FilterProductsDTO from './dtos/filter-products.dto';
 import AddToCartDTO from './dtos/add-to-cart.dto';
 import productSchema from '../../schemas/product.schema';
+import SetMainImageDTO from './dtos/set-main-image.dto';
+import productImageSchema from '../../schemas/product-image.schema';
+import AddProductImageDTO from './dtos/add-product-image.dto';
 
 @Injectable()
 export class ProductService {
@@ -20,7 +26,14 @@ export class ProductService {
       throw new UnprocessableEntityException(validation.error.issues);
     }
 
-    const { discount, name, price, sku, quantities } = validation.data;
+    const { discount, name, subtitle, price, sku, quantities, images } =
+      validation.data;
+
+    if ((images ?? []).filter((i) => i.main).length > 1) {
+      throw new UnprocessableEntityException(
+        'Only 1 image can be the main one',
+      );
+    }
 
     const sizesId = new Set(quantities.map((i) => i.sizeId));
 
@@ -67,10 +80,11 @@ export class ProductService {
 
     return await this.client.product.create({
       data: {
-        discount: discount,
-        name: name,
-        price: price,
-        sku: sku,
+        discount,
+        name,
+        subtitle,
+        price,
+        sku,
         categories: {
           connect: {
             id: category.id,
@@ -91,6 +105,14 @@ export class ProductService {
             sizeId: i.sizeId,
             count: i.count,
           })),
+        },
+        images: {
+          createMany: {
+            data: (images ?? []).map((image) => ({
+              url: image.url,
+              main: image.main,
+            })),
+          },
         },
       },
     });
@@ -176,6 +198,7 @@ export class ProductService {
             size: true,
           },
         },
+        images: true,
       },
     });
   }
@@ -352,6 +375,103 @@ export class ProductService {
     await this.client.cart.delete({
       where: {
         id: item.id,
+      },
+    });
+  }
+
+  async addImage(data: AddProductImageDTO) {
+    const validation = productImageSchema.safeParse(data);
+
+    if (validation.success === false) {
+      throw new UnprocessableEntityException(validation.error.issues);
+    }
+
+    const product = await this.client.product.findUnique({
+      where: {
+        id: data.productId,
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const imagesCount = await this.client.productImage.count({
+      where: {
+        productId: product.id,
+      },
+    });
+
+    return await this.client.productImage.create({
+      data: {
+        product: {
+          connect: {
+            id: product.id,
+          },
+        },
+        url: validation.data.url,
+        main: imagesCount === 0,
+      },
+    });
+  }
+
+  async setMainImage(data: SetMainImageDTO) {
+    const image = await this.client.productImage.findUnique({
+      where: {
+        id: data.imageId,
+        productId: data.productId,
+      },
+    });
+
+    if (!image) {
+      throw new NotFoundException('Image not found');
+    }
+
+    const oldMainImage = await this.client.productImage.findFirst({
+      where: {
+        productId: data.productId,
+        main: true,
+      },
+    });
+
+    const [newMainImage] = await Promise.all([
+      this.client.productImage.update({
+        where: {
+          id: image.id,
+        },
+        data: {
+          main: true,
+        },
+      }),
+      this.client.productImage.update({
+        where: {
+          id: oldMainImage.id,
+        },
+        data: {
+          main: false,
+        },
+      }),
+    ]);
+
+    return newMainImage;
+  }
+
+  async deleteImage(imageId: string) {
+    const image = await this.client.productImage.findUnique({
+      where: {
+        id: imageId,
+      },
+    });
+
+    if (!image) {
+      throw new NotFoundException('Image not found');
+    } else if (image.main) {
+      throw new BadRequestException('The main image cannot be deleted');
+    }
+
+    await this.client.productImage.delete({
+      where: {
+        id: imageId,
       },
     });
   }

@@ -268,6 +268,8 @@ export class UserService {
 
     if (!address) {
       throw new BadRequestException('Address not found');
+    } else if (address.main) {
+      throw new BadRequestException('The main address cannot be deleted');
     }
 
     await this.prisma.address.delete({

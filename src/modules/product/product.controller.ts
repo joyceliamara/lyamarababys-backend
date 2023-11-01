@@ -8,8 +8,9 @@ import {
   Req,
   Param,
   HttpCode,
+  Patch,
+  Delete,
 } from '@nestjs/common';
-import { Request } from 'express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import CreateProductDTO from './dtos/create-product.dto';
 import { ProductService } from './product.service';
@@ -26,6 +27,8 @@ import AddToCartDTO from './dtos/add-to-cart.dto';
 import { AdminGuard } from '../../guards/admin.guard';
 import { AuthGuard } from '../../guards/auth.guard';
 import AuthenticatedRequest from '../../interfaces/authenticated-request';
+import SetMainImageDTO from './dtos/set-main-image.dto';
+import AddProductImageDTO from './dtos/add-product-image.dto';
 
 @ApiTags('Product')
 @Controller('product')
@@ -148,5 +151,23 @@ export class ProductController {
     const { user } = req;
 
     await this.productService.removeFromCart(productId, user.id);
+  }
+
+  @Post('image')
+  @UseGuards(AdminGuard)
+  async addImage(@Body() body: AddProductImageDTO) {
+    return await this.productService.addImage(body);
+  }
+
+  @Patch('image/set-main')
+  @UseGuards(AdminGuard)
+  async setMainImage(@Body() body: SetMainImageDTO) {
+    return await this.productService.setMainImage(body);
+  }
+
+  @Delete('image/:imageId')
+  @UseGuards(AdminGuard)
+  async deleteImage(@Param('imageId') imageId: string) {
+    return await this.productService.deleteImage(imageId);
   }
 }

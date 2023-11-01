@@ -9,19 +9,21 @@ datasource db {
 }
 
 model Product {
-  id         String     @id @default(uuid())
+  id         String         @id @default(uuid())
   sku        String
   name       String
+  subtitle   String         @default("")
   price      Float
   discount   Float
-  createdAt  DateTime   @default(now()) @map("created_at")
-  updatedAt  DateTime   @updatedAt @map("updated_at")
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
   categories Category[]
   genders    Gender[]
   quantities Quantity[]
   colors     Color[]
   users      User[]
   cart       Cart[]
+  images     ProductImage[]
 
   @@map("products")
 }
@@ -80,6 +82,18 @@ model Color {
   cart      Cart[]
 
   @@map("colors")
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  url       String
+  main      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  product   Product? @relation(fields: [productId], references: [id])
+  productId String?
+
+  @@map("product_images")
 }
 
 model User {
