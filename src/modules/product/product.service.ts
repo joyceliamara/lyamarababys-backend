@@ -14,6 +14,8 @@ import productSchema from '../../schemas/product.schema';
 import SetMainImageDTO from './dtos/set-main-image.dto';
 import productImageSchema from '../../schemas/product-image.schema';
 import AddProductImageDTO from './dtos/add-product-image.dto';
+import Paginator from '../utils/paginator';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProductService {
@@ -26,8 +28,16 @@ export class ProductService {
       throw new UnprocessableEntityException(validation.error.issues);
     }
 
-    const { discount, name, subtitle, price, sku, quantities, images } =
-      validation.data;
+    const {
+      discount,
+      name,
+      subtitle,
+      composition,
+      price,
+      sku,
+      quantities,
+      images,
+    } = validation.data;
 
     if ((images ?? []).filter((i) => i.main).length > 1) {
       throw new UnprocessableEntityException(
@@ -83,6 +93,7 @@ export class ProductService {
         discount,
         name,
         subtitle,
+        composition,
         price,
         sku,
         categories: {
@@ -118,89 +129,114 @@ export class ProductService {
     });
   }
 
-  async list(data: FilterProductsDTO) {
-    console.log(data);
+  async list({ itemsPerPage, page, ...data }: FilterProductsDTO) {
+    const paginator = new Paginator(itemsPerPage, page);
+    const { skip, take } = paginator;
 
-    return await this.client.product.findMany({
-      where: {
-        AND: [
-          ...(data.name
-            ? [
-                {
-                  name: {
-                    contains: data.name,
-                  },
-                },
-              ]
-            : []),
-          ...(data.category
-            ? [
-                {
-                  categories: {
-                    some: {
-                      id: {
-                        in: data.category,
-                      },
-                    },
-                  },
-                },
-              ]
-            : []),
-          ...(data.gender
-            ? [
-                {
-                  genders: {
-                    some: {
-                      id: {
-                        in: data.gender,
-                      },
-                    },
-                  },
-                },
-              ]
-            : []),
-          ...(data.color
-            ? [
-                {
-                  colors: {
-                    some: {
-                      id: {
-                        in: data.color,
-                      },
-                    },
-                  },
-                },
-              ]
-            : []),
-          ...(data.size
-            ? [
-                {
-                  quantities: {
-                    some: {
-                      count: {
-                        gt: 0,
-                      },
-                      size: {
-                        id: {
-                          in: data.size,
-                        },
-                      },
-                    },
-                  },
-                },
-              ]
-            : []),
+    const where: Prisma.ProductWhereInput = {
+      ...(data.name && {
+        OR: [
+          {
+            name: {
+              contains: data.name,
+              mode: 'insensitive',
+            },
+          },
+          {
+            subtitle: {
+              contains: data.name,
+              mode: 'insensitive',
+            },
+          },
         ],
-      },
-      include: {
-        quantities: {
-          include: {
-            size: true,
+      }),
+      ...(data.category && {
+        categories: {
+          some: {
+            id: {
+              in: data.category,
+            },
           },
         },
+      }),
+      ...(data.gender && {
+        genders: {
+          some: {
+            id: {
+              in: data.gender,
+            },
+          },
+        },
+      }),
+      ...(data.color && {
+        colors: {
+          some: {
+            id: {
+              in: data.color,
+            },
+          },
+        },
+      }),
+      ...(data.size && {
+        quantities: {
+          some: {
+            count: {
+              gt: 0,
+            },
+            size: {
+              id: {
+                in: data.size,
+              },
+            },
+          },
+        },
+      }),
+    };
+
+    const [items, total] = await Promise.all([
+      this.client.product.findMany({
+        where,
+        include: {
+          quantities: {
+            include: {
+              size: true,
+            },
+          },
+          images: true,
+        },
+        orderBy: {
+          createdAt: Prisma.SortOrder.desc,
+        },
+        take,
+        skip,
+      }),
+      this.client.product.count({
+        where,
+      }),
+    ]);
+
+    return {
+      items,
+      ...paginator.getInfos(total),
+    };
+  }
+
+  async getById(id: string) {
+    const product = await this.client.product.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        colors: true,
         images: true,
       },
     });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return product;
   }
 
   async favoriteProduct(productId: string, userId: string) {

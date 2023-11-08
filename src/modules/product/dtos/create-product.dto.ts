@@ -27,6 +27,9 @@ export default class CreateProductDTO {
   subtitle: string;
 
   @ApiProperty()
+  composition: string;
+
+  @ApiProperty()
   price: number;
 
   @ApiProperty()

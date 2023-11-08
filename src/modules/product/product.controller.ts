@@ -49,8 +49,8 @@ export class ProductController {
   }
 
   @Get()
-  async list(@Query() params: FilterProductsDTO) {
-    return await this.productService.list(params);
+  async list(@Query() query: FilterProductsDTO) {
+    return await this.productService.list(query);
   }
 
   @Post('category')
@@ -169,5 +169,10 @@ export class ProductController {
   @UseGuards(AdminGuard)
   async deleteImage(@Param('imageId') imageId: string) {
     return await this.productService.deleteImage(imageId);
+  }
+
+  @Get(':id')
+  async getById(@Param('id') id: string) {
+    return await this.productService.getById(id);
   }
 }

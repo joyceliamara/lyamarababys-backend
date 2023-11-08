@@ -9,21 +9,22 @@ datasource db {
 }
 
 model Product {
-  id         String         @id @default(uuid())
-  sku        String
-  name       String
-  subtitle   String         @default("")
-  price      Float
-  discount   Float
-  createdAt  DateTime       @default(now()) @map("created_at")
-  updatedAt  DateTime       @updatedAt @map("updated_at")
-  categories Category[]
-  genders    Gender[]
-  quantities Quantity[]
-  colors     Color[]
-  users      User[]
-  cart       Cart[]
-  images     ProductImage[]
+  id          String         @id @default(uuid())
+  sku         String
+  name        String
+  subtitle    String         @default("")
+  composition String         @default("")
+  price       Float
+  discount    Float
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  categories  Category[]
+  genders     Gender[]
+  quantities  Quantity[]
+  colors      Color[]
+  users       User[]
+  cart        Cart[]
+  images      ProductImage[]
 
   @@map("products")
 }
