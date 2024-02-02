@@ -190,4 +190,5 @@ enum Status {
   WAITING
   ON_THE_WAY
   DELIVERED
+  CANCELED
 }

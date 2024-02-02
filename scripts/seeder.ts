@@ -1,20 +1,30 @@
 import { PrismaClient } from '@prisma/client';
+import { hashSync } from 'bcrypt';
 
 const client = new PrismaClient();
 
 (async () => {
-  await client.address.deleteMany();
-  await client.cart.deleteMany();
-  await client.category.deleteMany();
-  await client.color.deleteMany();
-  await client.contact.deleteMany();
-  await client.gender.deleteMany();
-  await client.order.deleteMany();
-  await client.product.deleteMany();
-  await client.productImage.deleteMany();
-  await client.quantity.deleteMany();
-  await client.size.deleteMany();
-  await client.user.deleteMany();
+  await Promise.all([
+    client.address.deleteMany(),
+    client.cart.deleteMany(),
+    client.category.deleteMany(),
+    client.color.deleteMany(),
+    client.contact.deleteMany(),
+    client.gender.deleteMany(),
+    client.order.deleteMany(),
+    client.product.deleteMany(),
+    client.productImage.deleteMany(),
+    client.quantity.deleteMany(),
+    client.size.deleteMany(),
+    client.user.deleteMany(),
+  ]);
+
+  const user = await client.user.create({
+    data: {
+      email: 'johndoe@email.com',
+      password: hashSync('12345678', 10),
+    },
+  });
 
   await client.category.createMany({
     data: ['Roupas', 'Bolsas', 'Brinquedos', 'Acessórios'].map((i) => ({
@@ -117,4 +127,23 @@ const client = new PrismaClient();
         }),
       ),
   );
+
+  await client.address.createMany({
+    data: [
+      ...Array(10)
+        .fill(null)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        .map((_, i) => ({
+          cep: '25500000',
+          city: `Cidade Imaginária ${i}`,
+          neighborhood: `Bairro imaginário ${i}`,
+          state: 'SP',
+          street: `Rua imaginária ${i}`,
+          complement: `Complemento imaginário ${i}`,
+          number: i + 1 + '',
+          main: i === 0,
+          userId: user.id,
+        })),
+    ],
+  });
 })();

@@ -221,7 +221,7 @@ export class ProductService {
     };
   }
 
-  async getById(id: string) {
+  async getById(id: string, userId?: string) {
     const product = await this.client.product.findUnique({
       where: {
         id,
@@ -229,6 +229,7 @@ export class ProductService {
       include: {
         colors: true,
         images: true,
+        quantities: true,
       },
     });
 
@@ -236,7 +237,42 @@ export class ProductService {
       throw new NotFoundException('Product not found');
     }
 
-    return product;
+    let favorited = undefined;
+
+    if (userId) {
+      favorited = await this.client.product.findFirst({
+        where: {
+          id: product.id,
+          users: {
+            some: {
+              id: userId,
+            },
+          },
+        },
+      });
+    }
+
+    return {
+      ...product,
+      favorited: !!favorited,
+    };
+  }
+
+  async listFavorites(userId: string) {
+    const favorites = await this.client.product.findMany({
+      where: {
+        users: {
+          some: {
+            id: userId,
+          },
+        },
+      },
+      include: {
+        images: true,
+      },
+    });
+
+    return favorites;
   }
 
   async favoriteProduct(productId: string, userId: string) {
@@ -295,6 +331,15 @@ export class ProductService {
         userId,
         orderId: null,
       },
+      include: {
+        product: {
+          include: {
+            images: true,
+          },
+        },
+        color: true,
+        size: true,
+      },
     });
   }
 
@@ -332,6 +377,9 @@ export class ProductService {
         productId: product.id,
         orderId: null,
       },
+      include: {
+        size: true,
+      },
     });
 
     if (existsItemCart) {
@@ -357,9 +405,11 @@ export class ProductService {
         },
       });
     } else {
-      const availableQuantities = product.quantities.find(
-        (i) => i.sizeId === existsItemCart.sizeId,
-      ).count;
+      const availableQuantities = product.quantities.find((i) => {
+        console.log({ existsItemCart });
+
+        return i.sizeId === data.sizeId;
+      }).count;
 
       if (data.quantity > availableQuantities) {
         throw new BadRequestException({

@@ -29,6 +29,7 @@ import { AuthGuard } from '../../guards/auth.guard';
 import AuthenticatedRequest from '../../interfaces/authenticated-request';
 import SetMainImageDTO from './dtos/set-main-image.dto';
 import AddProductImageDTO from './dtos/add-product-image.dto';
+import { IdentifierGuard } from '../../guards/identifier.guard';
 
 @ApiTags('Product')
 @Controller('product')
@@ -95,6 +96,12 @@ export class ProductController {
   @Get('color')
   async listColor() {
     return await this.colorService.list();
+  }
+
+  @Get('favorite')
+  @UseGuards(AuthGuard)
+  async listFavorites(@Req() req: AuthenticatedRequest) {
+    return await this.productService.listFavorites(req.user.id);
   }
 
   @Post('favorite/:productId')
@@ -172,7 +179,13 @@ export class ProductController {
   }
 
   @Get(':id')
-  async getById(@Param('id') id: string) {
-    return await this.productService.getById(id);
+  @UseGuards(IdentifierGuard)
+  async getById(
+    @Req() req: Partial<AuthenticatedRequest>,
+    @Param('id') id: string,
+  ) {
+    const { user } = req;
+
+    return await this.productService.getById(id, user ? user.id : undefined);
   }
 }
