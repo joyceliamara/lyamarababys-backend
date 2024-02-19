@@ -36,6 +36,14 @@ export class UserController {
     return await this.userService.auth(body);
   }
 
+  @Get()
+  @UseGuards(AuthGuard)
+  async getSelfData(@Req() req: AuthenticatedRequest) {
+    const { user } = req;
+
+    return await this.userService.getSelfData(user.id);
+  }
+
   @Put('contact')
   @UseGuards(AuthGuard)
   async updateContact(

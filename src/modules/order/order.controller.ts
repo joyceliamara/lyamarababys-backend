@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Put,
   Req,
@@ -8,7 +9,6 @@ import {
   Body,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
-import { Request } from 'express';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import UpdateOrderStatusDTO from './dtos/update-order-status.dto';
 import UpdateOrderTrackingCodeDTO from './dtos/update-order-traking-code.dto';
@@ -20,6 +20,14 @@ import AuthenticatedRequest from '../../interfaces/authenticated-request';
 @ApiBearerAuth()
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
+
+  @Get()
+  @UseGuards(AuthGuard)
+  async list(@Req() req: AuthenticatedRequest) {
+    const { user } = req;
+
+    return this.orderService.list(user.id);
+  }
 
   @Post()
   @UseGuards(AuthGuard)

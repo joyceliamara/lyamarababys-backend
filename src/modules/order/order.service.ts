@@ -12,6 +12,20 @@ import UpdateOrderTrackingCodeDTO from './dtos/update-order-traking-code.dto';
 export class OrderService {
   constructor(private readonly client: PrismaService) {}
 
+  async list(userId: string) {
+    return this.client.order.findMany({
+      where: {
+        userId,
+      },
+      select: {
+        id: true,
+        total: true,
+        status: true,
+        trackingCode: true,
+      },
+    });
+  }
+
   async create(userId: string) {
     const items = await this.client.cart.findMany({
       where: {

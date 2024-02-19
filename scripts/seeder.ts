@@ -1,5 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Status } from '@prisma/client';
 import { hashSync } from 'bcrypt';
+import { cpf } from 'cpf-cnpj-validator';
 
 const client = new PrismaClient();
 
@@ -7,12 +8,12 @@ const client = new PrismaClient();
   await Promise.all([
     client.address.deleteMany(),
     client.cart.deleteMany(),
-    client.category.deleteMany(),
-    client.color.deleteMany(),
     client.contact.deleteMany(),
     client.gender.deleteMany(),
     client.order.deleteMany(),
     client.product.deleteMany(),
+    client.category.deleteMany(),
+    client.color.deleteMany(),
     client.productImage.deleteMany(),
     client.quantity.deleteMany(),
     client.size.deleteMany(),
@@ -23,6 +24,15 @@ const client = new PrismaClient();
     data: {
       email: 'johndoe@email.com',
       password: hashSync('12345678', 10),
+      contact: {
+        create: {
+          bornDate: new Date(),
+          cpf: cpf.generate(),
+          name: 'John',
+          surname: 'Doe',
+          phone: '5511111111111',
+        },
+      },
     },
   });
 
@@ -128,6 +138,9 @@ const client = new PrismaClient();
       ),
   );
 
+  const product = await client.product.findFirst();
+  const size = await client.size.findFirst();
+
   await client.address.createMany({
     data: [
       ...Array(10)
@@ -146,4 +159,29 @@ const client = new PrismaClient();
         })),
     ],
   });
+
+  const status: Status[] = ['CREATED', 'DELIVERED', 'ON_THE_WAY', 'WAITING'];
+
+  await Promise.all(
+    status.map((i) =>
+      client.order.create({
+        data: {
+          discount: Math.floor(Math.random() * 35),
+          total: Math.floor(Math.random() * 700),
+          cartItem: {
+            create: {
+              quantity: 2,
+              colorId: color.id,
+              productId: product.id,
+              sizeId: size.id,
+              userId: user.id,
+            },
+          },
+          userId: user.id,
+          status: i,
+          trackingCode: 'AB12345CD',
+        },
+      }),
+    ),
+  );
 })();

@@ -96,6 +96,21 @@ export class UserService {
     };
   }
 
+  async getSelfData(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      include: {
+        contact: true,
+      },
+    });
+
+    delete user.password;
+
+    return user;
+  }
+
   async updateContact(userId: string, data: UpdateRegisterDTO) {
     const validation = contactSchema.safeParse(data);
 

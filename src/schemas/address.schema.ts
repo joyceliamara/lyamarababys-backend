@@ -7,7 +7,7 @@ const addressSchema = z.object({
   complement: z.string().trim().max(255).optional(),
   neighborhood: z.string().trim().min(1).max(255),
   city: z.string().trim().min(2).max(255),
-  state: z.string().trim().min(2).max(255),
+  state: z.string().trim().length(2),
 });
 
 export default addressSchema;
