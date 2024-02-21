@@ -9,6 +9,7 @@ import {
   Req,
   Param,
   Patch,
+  Res,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import CreateUserDTO from './dtos/create-user.dto';
@@ -19,6 +20,7 @@ import { AuthGuard } from '../../guards/auth.guard';
 import CreateAddressDTO from './dtos/create-address.dto';
 import AuthenticatedRequest from '../../interfaces/authenticated-request';
 import UpdateAddressDTO from './dtos/update-address.dto';
+import { Response } from 'express';
 
 @Controller('user')
 @ApiTags('User')
@@ -27,13 +29,40 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
-  async create(@Body() body: CreateUserDTO) {
-    return await this.userService.create(body);
+  async create(
+    @Body() body: CreateUserDTO,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.userService.create(body);
+
+    res.cookie('token', result.token, {
+      httpOnly: true,
+      secure: true,
+      expires: new Date(Date.now() + 604800000), // 7 days
+    });
+
+    return result.user;
   }
 
   @Post('auth')
-  async auth(@Body() body: AuthUserDTO) {
-    return await this.userService.auth(body);
+  async auth(
+    @Body() body: AuthUserDTO,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.userService.auth(body);
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    if (body.remember) {
+      cookieOptions['expires'] = new Date(Date.now() + 604800000); // 7 days
+    }
+
+    res.cookie('token', result.token, cookieOptions);
+
+    return result.user;
   }
 
   @Get()

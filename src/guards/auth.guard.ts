@@ -1,41 +1,27 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { verify } from 'jsonwebtoken';
-import { PrismaService } from '../services/prisma.service';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly jwtService: JwtService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const token = this.extractTokenFromHeader(request);
+
+    const token = request.cookies['token'] ?? request.headers['authorization'];
 
     if (!token) {
-      throw new UnauthorizedException('Token not exists');
+      return false;
     }
-
-    let user = null;
 
     try {
-      const payload = verify(token, process.env.JWT_KEY);
+      const user = this.jwtService.verify(token);
 
-      user = payload;
-    } catch (err) {
-      throw new UnauthorizedException('Invalid token');
+      request.user = user;
+
+      return true;
+    } catch (error) {
+      return false;
     }
-
-    request['user'] = user;
-
-    return true;
-  }
-
-  private extractTokenFromHeader(request: Request): string | undefined {
-    const [type, token] = request.headers['authorization']?.split(' ') ?? [];
-    return type === 'Bearer' ? token : undefined;
   }
 }

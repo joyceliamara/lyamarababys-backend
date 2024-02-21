@@ -6,7 +6,6 @@ import {
 import { PrismaService } from '../../services/prisma.service';
 import CreateUserDTO from './dtos/create-user.dto';
 import { compareSync, hashSync } from 'bcrypt';
-import { sign } from 'jsonwebtoken';
 import AuthUserDTO from './dtos/auth-user.dto';
 import UpdateRegisterDTO from './dtos/update-contact.dto';
 import userSchema from '../../schemas/user.schema';
@@ -14,10 +13,14 @@ import contactSchema from '../../schemas/contact.schema';
 import CreateAddressDTO from './dtos/create-address.dto';
 import addressSchema from '../../schemas/address.schema';
 import UpdateAddressDTO from './dtos/update-address.dto';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async create(data: CreateUserDTO) {
     const validation = userSchema.safeParse(data);
@@ -56,9 +59,13 @@ export class UserService {
       },
     });
 
+    const payload = {
+      sub: newUser.id,
+    };
+
     return {
       user: newUser,
-      token: sign({ id: newUser.id, email }, process.env.JWT_KEY),
+      token: this.jwtService.sign(payload),
     };
   }
 
@@ -90,9 +97,13 @@ export class UserService {
 
     delete user.password;
 
+    const payload = {
+      sub: user.id,
+    };
+
     return {
       user,
-      token: sign({ id: user.id, email: user.email }, process.env.JWT_KEY),
+      token: this.jwtService.sign(payload),
     };
   }
 

@@ -6,4 +6,7 @@ export default class AuthUserDTO {
 
   @ApiProperty()
   password: string;
+
+  @ApiProperty()
+  remember: string;
 }
