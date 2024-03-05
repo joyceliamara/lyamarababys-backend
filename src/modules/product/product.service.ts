@@ -406,8 +406,6 @@ export class ProductService {
       });
     } else {
       const availableQuantities = product.quantities.find((i) => {
-        console.log({ existsItemCart });
-
         return i.sizeId === data.sizeId;
       }).count;
 
