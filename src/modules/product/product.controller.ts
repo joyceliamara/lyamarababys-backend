@@ -101,7 +101,7 @@ export class ProductController {
   @Get('favorite')
   @UseGuards(AuthGuard)
   async listFavorites(@Req() req: AuthenticatedRequest) {
-    return await this.productService.listFavorites(req.user.id);
+    return await this.productService.listFavorites(req.user["sub"]);
   }
 
   @Post('favorite/:productId')
@@ -113,7 +113,7 @@ export class ProductController {
   ) {
     const { user } = req;
 
-    await this.productService.favoriteProduct(productId, user.id);
+    await this.productService.favoriteProduct(productId, user["sub"]);
   }
 
   @Post('unfavorite/:productId')
@@ -125,7 +125,7 @@ export class ProductController {
   ) {
     const { user } = req;
 
-    await this.productService.unfavoriteProduct(productId, user.id);
+    await this.productService.unfavoriteProduct(productId, user["sub"]);
   }
 
   @Get('cart')
@@ -133,7 +133,7 @@ export class ProductController {
   async getCart(@Req() req: AuthenticatedRequest) {
     const { user } = req;
 
-    return await this.productService.getCart(user.id);
+    return await this.productService.getCart(user["sub"]);
   }
 
   @Post('cart/add')
@@ -145,7 +145,7 @@ export class ProductController {
   ) {
     const { user } = req;
 
-    await this.productService.addToCart(body, user.id);
+    await this.productService.addToCart(body, user["sub"]);
   }
 
   @Post('cart/remove/:productId')
@@ -157,7 +157,7 @@ export class ProductController {
   ) {
     const { user } = req;
 
-    await this.productService.removeFromCart(productId, user.id);
+    await this.productService.removeFromCart(productId, user["sub"]);
   }
 
   @Post('image')
@@ -186,6 +186,6 @@ export class ProductController {
   ) {
     const { user } = req;
 
-    return await this.productService.getById(id, user ? user.id : undefined);
+    return await this.productService.getById(id, user ? user["sub"] : undefined);
   }
 }

@@ -26,7 +26,7 @@ export class OrderController {
   async list(@Req() req: AuthenticatedRequest) {
     const { user } = req;
 
-    return this.orderService.list(user.id);
+    return this.orderService.list(user['sub']);
   }
 
   @Post()
@@ -34,7 +34,7 @@ export class OrderController {
   async create(@Req() req: AuthenticatedRequest) {
     const { user } = req;
 
-    return await this.orderService.create(user.id);
+    return await this.orderService.create(user['sub']);
   }
 
   @Put('status/:orderId')

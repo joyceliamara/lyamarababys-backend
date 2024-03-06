@@ -98,7 +98,7 @@ export class UserService {
     delete user.password;
 
     const payload = {
-      sub: user.id,
+      sub: user['sub'],
     };
 
     return {

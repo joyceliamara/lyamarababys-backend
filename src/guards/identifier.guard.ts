@@ -10,7 +10,7 @@ import { verify } from 'jsonwebtoken';
 export class IdentifierGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const token = this.extractTokenFromHeader(request);
+    const token = request.cookies['token'] ?? request.headers['authorization'];
 
     if (!token) {
       request['user'] = undefined;

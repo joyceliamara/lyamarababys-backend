@@ -222,6 +222,8 @@ export class ProductService {
   }
 
   async getById(id: string, userId?: string) {
+    console.log(userId)
+
     const product = await this.client.product.findUnique({
       where: {
         id,

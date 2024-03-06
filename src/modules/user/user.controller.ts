@@ -70,7 +70,7 @@ export class UserController {
   async getSelfData(@Req() req: AuthenticatedRequest) {
     const { user } = req;
 
-    return await this.userService.getSelfData(user.id);
+    return await this.userService.getSelfData(user['sub']);
   }
 
   @Put('contact')
@@ -81,13 +81,13 @@ export class UserController {
   ) {
     const { user } = req;
 
-    return await this.userService.updateContact(user.id, data);
+    return await this.userService.updateContact(user['sub'], data);
   }
 
   @Get('address')
   @UseGuards(AuthGuard)
   async getAddresses(@Req() req: AuthenticatedRequest) {
-    return this.userService.getAddresses(req.user.id);
+    return this.userService.getAddresses(req.user['sub']);
   }
 
   @Post('address')
@@ -98,7 +98,7 @@ export class UserController {
   ) {
     const { user } = req;
 
-    return await this.userService.createAddress(body, user.id);
+    return await this.userService.createAddress(body, user['sub']);
   }
 
   @Put('address/:addressId')
@@ -108,7 +108,7 @@ export class UserController {
     @Req() req: AuthenticatedRequest,
     @Body() body: UpdateAddressDTO,
   ) {
-    return await this.userService.updateAddress(addressId, req.user.id, body);
+    return await this.userService.updateAddress(addressId, req.user['sub'], body);
   }
 
   @Patch('address/:addressId/set-main')
@@ -117,7 +117,7 @@ export class UserController {
     @Param('addressId') addressId: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    return await this.userService.setMainAddress(addressId, req.user.id);
+    return await this.userService.setMainAddress(addressId, req.user['sub']);
   }
 
   @Delete('address/:addressId')
@@ -126,6 +126,6 @@ export class UserController {
     @Param('addressId') addressId: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    await this.userService.deleteAddress(addressId, req.user.id);
+    await this.userService.deleteAddress(addressId, req.user['sub']);
   }
 }
