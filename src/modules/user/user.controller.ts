@@ -65,7 +65,7 @@ export class UserController {
     return result.user;
   }
 
-  @Get()
+  @Get('self')
   @UseGuards(AuthGuard)
   async getSelfData(@Req() req: AuthenticatedRequest) {
     const { user } = req;
@@ -108,7 +108,11 @@ export class UserController {
     @Req() req: AuthenticatedRequest,
     @Body() body: UpdateAddressDTO,
   ) {
-    return await this.userService.updateAddress(addressId, req.user['sub'], body);
+    return await this.userService.updateAddress(
+      addressId,
+      req.user['sub'],
+      body,
+    );
   }
 
   @Patch('address/:addressId/set-main')

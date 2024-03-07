@@ -77,6 +77,11 @@ export class UserService {
       select: {
         email: true,
         id: true,
+        contact: {
+          select: {
+            name: true,
+          },
+        },
         password: true,
         createdAt: false,
         updatedAt: false,
@@ -98,7 +103,7 @@ export class UserService {
     delete user.password;
 
     const payload = {
-      sub: user['sub'],
+      sub: user.id,
     };
 
     return {
