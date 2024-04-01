@@ -14,8 +14,6 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import CreateProductDTO from './dtos/create-product.dto';
 import { ProductService } from './product.service';
-import SizeService from './size.service';
-import CreateSizeDTO from './dtos/create-size.dto';
 import CreateColorDTO from './dtos/create-color.dto';
 import ColorService from './color.service';
 import FilterProductsDTO from './dtos/filter-products.dto';
@@ -33,7 +31,6 @@ import { IdentifierGuard } from '../../guards/identifier.guard';
 export class ProductController {
   constructor(
     private readonly productService: ProductService,
-    private readonly sizeService: SizeService,
     private readonly colorService: ColorService,
   ) {}
 
@@ -46,17 +43,6 @@ export class ProductController {
   @Get()
   async list(@Query() query: FilterProductsDTO) {
     return await this.productService.list(query);
-  }
-
-  @Post('size')
-  @UseGuards(AdminGuard)
-  async createSize(@Body() body: CreateSizeDTO) {
-    return await this.sizeService.create(body);
-  }
-
-  @Get('size')
-  async listSize() {
-    return await this.sizeService.list();
   }
 
   @Post('color')
