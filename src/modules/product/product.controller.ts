@@ -14,8 +14,6 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import CreateProductDTO from './dtos/create-product.dto';
 import { ProductService } from './product.service';
-import CategoryService from './category.service';
-import CreateCategoryDTO from './dtos/create-category.dto';
 import GenderService from './gender.service';
 import CreateGenderDTO from './dtos/create-gender.dto';
 import SizeService from './size.service';
@@ -37,7 +35,6 @@ import { IdentifierGuard } from '../../guards/identifier.guard';
 export class ProductController {
   constructor(
     private readonly productService: ProductService,
-    private readonly categoryService: CategoryService,
     private readonly genderService: GenderService,
     private readonly sizeService: SizeService,
     private readonly colorService: ColorService,
@@ -52,17 +49,6 @@ export class ProductController {
   @Get()
   async list(@Query() query: FilterProductsDTO) {
     return await this.productService.list(query);
-  }
-
-  @Post('category')
-  @UseGuards(AdminGuard)
-  async createCategory(@Body() body: CreateCategoryDTO) {
-    return await this.categoryService.create(body);
-  }
-
-  @Get('category')
-  async listCategories() {
-    return await this.categoryService.list();
   }
 
   @Post('gender')
@@ -101,7 +87,7 @@ export class ProductController {
   @Get('favorite')
   @UseGuards(AuthGuard)
   async listFavorites(@Req() req: AuthenticatedRequest) {
-    return await this.productService.listFavorites(req.user["sub"]);
+    return await this.productService.listFavorites(req.user['sub']);
   }
 
   @Post('favorite/:productId')
@@ -113,7 +99,7 @@ export class ProductController {
   ) {
     const { user } = req;
 
-    await this.productService.favoriteProduct(productId, user["sub"]);
+    await this.productService.favoriteProduct(productId, user['sub']);
   }
 
   @Post('unfavorite/:productId')
@@ -125,7 +111,7 @@ export class ProductController {
   ) {
     const { user } = req;
 
-    await this.productService.unfavoriteProduct(productId, user["sub"]);
+    await this.productService.unfavoriteProduct(productId, user['sub']);
   }
 
   @Get('cart')
@@ -133,7 +119,7 @@ export class ProductController {
   async getCart(@Req() req: AuthenticatedRequest) {
     const { user } = req;
 
-    return await this.productService.getCart(user["sub"]);
+    return await this.productService.getCart(user['sub']);
   }
 
   @Post('cart/add')
@@ -145,7 +131,7 @@ export class ProductController {
   ) {
     const { user } = req;
 
-    await this.productService.addToCart(body, user["sub"]);
+    await this.productService.addToCart(body, user['sub']);
   }
 
   @Post('cart/remove/:productId')
@@ -157,7 +143,7 @@ export class ProductController {
   ) {
     const { user } = req;
 
-    await this.productService.removeFromCart(productId, user["sub"]);
+    await this.productService.removeFromCart(productId, user['sub']);
   }
 
   @Post('image')
@@ -186,6 +172,9 @@ export class ProductController {
   ) {
     const { user } = req;
 
-    return await this.productService.getById(id, user ? user["sub"] : undefined);
+    return await this.productService.getById(
+      id,
+      user ? user['sub'] : undefined,
+    );
   }
 }
