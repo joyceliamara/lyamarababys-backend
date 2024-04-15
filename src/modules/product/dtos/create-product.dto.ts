@@ -44,8 +44,11 @@ export default class CreateProductDTO {
   @ApiProperty()
   colorId: string;
 
-  @ApiProperty({ type: Quantity, isArray: true })
-  quantities: Quantity[];
+  @ApiProperty()
+  sizeId: string;
+
+  @ApiProperty()
+  quantities: number;
 
   @ApiProperty({ type: Image, isArray: true })
   images: Image[];

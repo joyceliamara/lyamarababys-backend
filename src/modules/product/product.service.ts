@@ -45,9 +45,7 @@ export class ProductService {
       );
     }
 
-    const sizesId = new Set(quantities.map((i) => i.sizeId));
-
-    const [category, gender, color, sizes] = await Promise.all([
+    const [category, gender, color, size] = await Promise.all([
       this.client.category.findUnique({
         where: {
           id: data.categoryId,
@@ -63,22 +61,12 @@ export class ProductService {
           id: data.colorId,
         },
       }),
-      this.client.size.findMany({
+      this.client.size.findUnique({
         where: {
-          id: {
-            in: [...sizesId],
-          },
+          id: data.sizeId,
         },
       }),
     ]);
-
-    if (sizes.length !== sizesId.size) {
-      const notFoundId = sizes.filter((i) => !sizesId.has(i.id));
-
-      throw new UnprocessableEntityException(
-        `Canoot found size id: ${notFoundId.join(', ')}`,
-      );
-    }
 
     if (!category) {
       throw new UnprocessableEntityException('Category not found');
@@ -86,6 +74,8 @@ export class ProductService {
       throw new UnprocessableEntityException('Gender not found');
     } else if (!color) {
       throw new UnprocessableEntityException('Color not found');
+    } else if (!size) {
+      throw new UnprocessableEntityException('Size not found');
     }
 
     return await this.client.product.create({
@@ -96,26 +86,10 @@ export class ProductService {
         composition,
         price,
         sku,
-        categories: {
+        category: {
           connect: {
             id: category.id,
           },
-        },
-        genders: {
-          connect: {
-            id: gender.id,
-          },
-        },
-        colors: {
-          connect: {
-            id: color.id,
-          },
-        },
-        quantities: {
-          create: quantities.map((i) => ({
-            sizeId: i.sizeId,
-            count: i.count,
-          })),
         },
         images: {
           createMany: {
@@ -123,6 +97,14 @@ export class ProductService {
               url: image.url,
               main: image.main,
             })),
+          },
+        },
+        quantity: {
+          create: {
+            value: quantities,
+            colorId: color.id,
+            genderId: gender.id,
+            sizeId: size.id,
           },
         },
       },
@@ -134,74 +116,64 @@ export class ProductService {
     const { skip, take } = paginator;
 
     const where: Prisma.ProductWhereInput = {
-      ...(data.name && {
-        OR: [
-          {
-            name: {
-              contains: data.name,
-              mode: 'insensitive',
-            },
-          },
-          {
-            subtitle: {
-              contains: data.name,
-              mode: 'insensitive',
-            },
-          },
-        ],
-      }),
-      ...(data.category && {
-        categories: {
-          some: {
-            id: {
-              in: data.category,
-            },
+      OR: [
+        {
+          name: {
+            contains: data.name,
+            mode: 'insensitive',
           },
         },
-      }),
-      ...(data.gender && {
-        genders: {
-          some: {
-            id: {
-              in: data.gender,
-            },
+        {
+          subtitle: {
+            contains: data.name,
+            mode: 'insensitive',
           },
         },
-      }),
-      ...(data.color && {
-        colors: {
-          some: {
-            id: {
-              in: data.color,
-            },
-          },
-        },
-      }),
-      ...(data.size && {
-        quantities: {
-          some: {
-            count: {
-              gt: 0,
-            },
-            size: {
-              id: {
-                in: data.size,
-              },
-            },
-          },
-        },
-      }),
+      ],
     };
+
+    if (data.category) {
+      where.category = {
+        id: {
+          in: data.category,
+        },
+      };
+    }
+    if (data.gender) {
+      where.quantity.some = {
+        gender: {
+          id: {
+            in: data.gender,
+          },
+        },
+      };
+    }
+    if (data.color) {
+      where.quantity.some = {
+        ...where.quantity.some,
+        color: {
+          id: {
+            in: data.color,
+          },
+        },
+      };
+    }
+    if (data.size) {
+      where.quantity.some = {
+        ...where.quantity.some,
+        size: {
+          id: {
+            in: data.size,
+          },
+        },
+      };
+    }
 
     const [items, total] = await Promise.all([
       this.client.product.findMany({
         where,
         include: {
-          quantities: {
-            include: {
-              size: true,
-            },
-          },
+          quantity: true,
           images: true,
         },
         orderBy: {
@@ -222,16 +194,15 @@ export class ProductService {
   }
 
   async getById(id: string, userId?: string) {
-    console.log(userId)
+    console.log(userId);
 
     const product = await this.client.product.findUnique({
       where: {
         id,
       },
       include: {
-        colors: true,
         images: true,
-        quantities: true,
+        quantity: true,
       },
     });
 
@@ -331,16 +302,10 @@ export class ProductService {
     return await this.client.cart.findMany({
       where: {
         userId,
-        orderId: null,
+        order: null,
       },
       include: {
-        product: {
-          include: {
-            images: true,
-          },
-        },
-        color: true,
-        size: true,
+        user: true,
       },
     });
   }
@@ -349,25 +314,29 @@ export class ProductService {
     const product = await this.client.product.findUnique({
       where: {
         id: data.productId,
-        quantities: {
+        quantity: {
           some: {
             sizeId: data.sizeId,
-          },
-        },
-        colors: {
-          some: {
-            id: data.colorId,
+            colorId: data.colorId,
+            value: {
+              gte: data.quantity,
+            },
           },
         },
       },
       include: {
-        quantities: true,
+        quantity: true,
       },
     });
 
+    const quantityAvailable =
+      product?.quantity.find(
+        (i) => i.sizeId === data.sizeId && i.colorId === data.colorId,
+      )?.value ?? 0;
+
     if (!product) {
       throw new BadRequestException('Product not found');
-    } else if (product.quantities[0].count < data.quantity) {
+    } else if (quantityAvailable < data.quantity) {
       throw new BadRequestException(
         'Quantity of products available is not enough',
       );
@@ -376,20 +345,36 @@ export class ProductService {
     const existsItemCart = await this.client.cart.findFirst({
       where: {
         userId,
-        productId: product.id,
-        orderId: null,
+        products: {
+          some: {
+            id: data.productId,
+          },
+        },
+        order: null,
       },
       include: {
-        size: true,
+        products: {
+          include: {
+            quantity: true,
+          },
+        },
       },
     });
 
     if (existsItemCart) {
-      const availableQuantities = product.quantities.find(
-        (i) => i.sizeId === existsItemCart.sizeId,
-      ).count;
+      let quantityId: number;
 
-      if (existsItemCart.quantity + data.quantity > availableQuantities) {
+      const existsItemCartQuantity = existsItemCart.products
+        .find((i) => i.id === data.productId)
+        .quantity.find((i) => {
+          if (i.sizeId === data.sizeId && i.colorId === data.colorId) {
+            quantityId = i.id;
+            return true;
+          }
+          return false;
+        }).value;
+
+      if (existsItemCartQuantity + data.quantity > quantityAvailable) {
         throw new BadRequestException({
           message: `Quantity unavailable for ${product.name} product`,
           productId: product.id,
@@ -401,15 +386,34 @@ export class ProductService {
           id: existsItemCart.id,
         },
         data: {
-          quantity: {
-            increment: data.quantity,
+          // todo: esse update está atualizando a quantidade do produto, mas não está atualizando o preço total do carrinho
+          products: {
+            update: {
+              where: {
+                id: data.productId,
+              },
+              data: {
+                quantity: {
+                  update: {
+                    where: {
+                      id: quantityId,
+                    },
+                    data: {
+                      value: {
+                        increment: data.quantity,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       });
     } else {
-      const availableQuantities = product.quantities.find((i) => {
+      const availableQuantities = product.quantity.find((i) => {
         return i.sizeId === data.sizeId;
-      }).count;
+      }).value;
 
       if (data.quantity > availableQuantities) {
         throw new BadRequestException({
@@ -420,25 +424,9 @@ export class ProductService {
 
       await this.client.cart.create({
         data: {
-          quantity: data.quantity,
-          product: {
+          products: {
             connect: {
-              id: data.productId,
-            },
-          },
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
-          color: {
-            connect: {
-              id: data.colorId,
-            },
-          },
-          size: {
-            connect: {
-              id: data.sizeId,
+              id: product.id,
             },
           },
         },

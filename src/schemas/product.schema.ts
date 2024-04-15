@@ -10,12 +10,8 @@ const productSchema = z.object({
   categoryId: z.string().uuid(),
   genderId: z.string().uuid(),
   colorId: z.string().uuid(),
-  quantities: z.array(
-    z.object({
-      sizeId: z.string().uuid(),
-      count: z.number().min(0).max(4294967295),
-    }),
-  ),
+  sizeId: z.string().uuid(),
+  quantities: z.number(),
   images: z.array(
     z.object({
       url: z.string().trim().url(),
