@@ -7,6 +7,7 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { CategoryModule } from './modules/category/category.module';
 import { ColorModule } from './modules/color/color.module';
 import { GenderModule } from './modules/gender/gender.module';
+import { SizeModule } from './modules/size/size.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { GenderModule } from './modules/gender/gender.module';
     CategoryModule,
     ColorModule,
     GenderModule,
+    SizeModule,
   ],
 })
 export class AppModule {}
