@@ -17,15 +17,29 @@ model Product {
   discount    Float
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt @map("updated_at")
-  categories  Category[]
-  genders     Gender[]
+  category    Category?      @relation(fields: [categoryId], references: [id])
+  categoryId  String?
+  gender      Gender?        @relation(fields: [genderId], references: [id])
+  genderId    String?
   quantities  Quantity[]
-  colors      Color[]
   users       User[]
   cart        Cart[]
   images      ProductImage[]
 
   @@map("products")
+}
+
+model Quantity {
+  id        String   @id @default(uuid())
+  color     Color    @relation(fields: [colorId], references: [id])
+  colorId   String
+  size      Size     @relation(fields: [sizeId], references: [id])
+  sizeId    String
+  units     Int
+  Product   Product? @relation(fields: [productId], references: [id])
+  productId String?
+
+  @@map("quantities")
 }
 
 model Category {
@@ -49,37 +63,24 @@ model Gender {
 }
 
 model Size {
-  id         String     @id @default(uuid())
-  name       String     @unique
-  createdAt  DateTime   @default(now()) @map("created_at")
-  updatedAt  DateTime   @updatedAt @map("updated_at")
-  quantities Quantity[]
-  cart       Cart[]
+  id        String     @id @default(uuid())
+  name      String     @unique
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  cart      Cart[]
+  quantity  Quantity[]
 
   @@map("sizes")
 }
 
-model Quantity {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  size      Size     @relation(fields: [sizeId], references: [id], onDelete: Cascade)
-  sizeId    String
-  count     Int
-  Product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId String?
-
-  @@map("quantities")
-}
-
 model Color {
-  id        String    @id @default(uuid())
-  name      String    @unique
+  id        String     @id @default(uuid())
+  name      String     @unique
   code      String
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  product   Product[]
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
   cart      Cart[]
+  quantity  Quantity[]
 
   @@map("colors")
 }
