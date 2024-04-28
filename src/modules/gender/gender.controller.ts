@@ -8,7 +8,7 @@ import {
   Put,
 } from '@nestjs/common';
 import UpdateColorDTO from '../color/dtos/update-color.dto';
-import CreateColorDTO from '../product/dtos/create-color.dto';
+import CreateColorDTO from '../product-old/dtos/create-color.dto';
 import { GenderService } from './gender.service';
 
 @Controller('gender')

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import CreateGenderDTO from '../product/dtos/create-gender.dto';
+import CreateGenderDTO from '../product-old/dtos/create-gender.dto';
 import UpdateGenderDTO from './dtos/update-gender.dto';
 import { PrismaService } from '../../services/prisma.service';
 

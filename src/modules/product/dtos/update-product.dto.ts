@@ -1,6 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export default class CreateProductDTO {
+export default class UpdateProductDTO {
+  @ApiProperty()
+  id: string;
+
   @ApiProperty()
   sku: string;
 

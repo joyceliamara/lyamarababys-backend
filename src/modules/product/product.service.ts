@@ -1,563 +1,155 @@
-'use client';
-
 import {
+  ConflictException,
   Injectable,
-  UnprocessableEntityException,
-  BadRequestException,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
-import { PrismaService } from '../../services/prisma.service';
+import { PrismaClient } from '@prisma/client';
 import CreateProductDTO from './dtos/create-product.dto';
-import FilterProductsDTO from './dtos/filter-products.dto';
-import AddToCartDTO from './dtos/add-to-cart.dto';
-import productSchema from '../../schemas/product.schema';
-import SetMainImageDTO from './dtos/set-main-image.dto';
-import productImageSchema from '../../schemas/product-image.schema';
-import AddProductImageDTO from './dtos/add-product-image.dto';
-import Paginator from '../utils/paginator';
-import { Prisma } from '@prisma/client';
+import { createProductSchema } from './schemas/create-product.schema';
+import { updateProductSchema } from './schemas/update-product.schema';
+import UpdateProductDTO from './dtos/update-product.dto';
 
 @Injectable()
 export class ProductService {
-  constructor(private readonly client: PrismaService) {}
+  constructor(private readonly prisma: PrismaClient) {}
 
   async create(data: CreateProductDTO) {
-    const validation = productSchema.safeParse(data);
+    const validation = createProductSchema.safeParse(data);
 
     if (validation.success === false) {
-      throw new UnprocessableEntityException(validation.error.issues);
+      throw new UnprocessableEntityException(validation.error.message);
     }
 
-    const {
-      discount,
-      name,
-      subtitle,
-      composition,
-      price,
-      sku,
-      quantities,
-      images,
-    } = validation.data;
+    const sdkInUse = !!(await this.prisma.product.findFirst({
+      where: {
+        sku: data.sku,
+      },
+    }));
 
-    if ((images ?? []).filter((i) => i.main).length > 1) {
-      throw new UnprocessableEntityException(
-        'Only 1 image can be the main one',
-      );
+    if (sdkInUse) {
+      throw new ConflictException('SKU already in use');
     }
 
-    const sizesId = new Set(quantities.map((i) => i.sizeId));
-
-    const [category, gender, color, sizes] = await Promise.all([
-      this.client.category.findUnique({
+    const [category, gender] = await Promise.all([
+      this.prisma.category.findUnique({
         where: {
           id: data.categoryId,
         },
       }),
-      this.client.gender.findUnique({
+      this.prisma.gender.findUnique({
         where: {
           id: data.genderId,
         },
       }),
-      this.client.color.findUnique({
-        where: {
-          id: data.colorId,
-        },
-      }),
-      this.client.size.findMany({
-        where: {
-          id: {
-            in: [...sizesId],
-          },
-        },
-      }),
     ]);
 
-    if (sizes.length !== sizesId.size) {
-      const notFoundId = sizes.filter((i) => !sizesId.has(i.id));
-
-      throw new UnprocessableEntityException(
-        `Canoot found size id: ${notFoundId.join(', ')}`,
-      );
-    }
-
     if (!category) {
-      throw new UnprocessableEntityException('Category not found');
+      throw new NotFoundException('Category not found');
     } else if (!gender) {
-      throw new UnprocessableEntityException('Gender not found');
-    } else if (!color) {
-      throw new UnprocessableEntityException('Color not found');
+      throw new NotFoundException('Gender not found');
     }
 
-    return await this.client.product.create({
+    const path = `${data.name.replace(/\s/g, '-')}-${data.sku}`;
+
+    return await this.prisma.product.create({
       data: {
-        discount,
-        name,
-        subtitle,
-        composition,
-        price,
-        sku,
-        categories: {
+        sku: data.sku,
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        discount: data.discount,
+        path,
+        category: {
           connect: {
-            id: category.id,
+            id: data.categoryId,
           },
         },
-        genders: {
+        gender: {
           connect: {
-            id: gender.id,
-          },
-        },
-        colors: {
-          connect: {
-            id: color.id,
-          },
-        },
-        quantities: {
-          create: quantities.map((i) => ({
-            sizeId: i.sizeId,
-            count: i.count,
-          })),
-        },
-        images: {
-          createMany: {
-            data: (images ?? []).map((image) => ({
-              url: image.url,
-              main: image.main,
-            })),
+            id: data.genderId,
           },
         },
       },
     });
   }
 
-  async list({ itemsPerPage, page, ...data }: FilterProductsDTO) {
-    const paginator = new Paginator(itemsPerPage, page);
-    const { skip, take } = paginator;
+  async findAll() {
+    return await this.prisma.product.findMany();
+  }
 
-    const where: Prisma.ProductWhereInput = {
-      ...(data.name && {
+  async findOne(idOrPath: string) {
+    return await this.prisma.product.findFirst({
+      where: {
         OR: [
           {
-            name: {
-              contains: data.name,
-              mode: 'insensitive',
-            },
+            id: idOrPath,
           },
           {
-            subtitle: {
-              contains: data.name,
-              mode: 'insensitive',
-            },
+            path: idOrPath,
           },
         ],
-      }),
-      ...(data.category && {
-        categories: {
-          some: {
-            id: {
-              in: data.category,
-            },
-          },
-        },
-      }),
-      ...(data.gender && {
-        genders: {
-          some: {
-            id: {
-              in: data.gender,
-            },
-          },
-        },
-      }),
-      ...(data.color && {
-        colors: {
-          some: {
-            id: {
-              in: data.color,
-            },
-          },
-        },
-      }),
-      ...(data.size && {
-        quantities: {
-          some: {
-            count: {
-              gt: 0,
-            },
-            size: {
-              id: {
-                in: data.size,
-              },
-            },
-          },
-        },
-      }),
-    };
+      },
+    });
+  }
 
-    const [items, total] = await Promise.all([
-      this.client.product.findMany({
-        where,
-        include: {
-          quantities: {
-            include: {
-              size: true,
-            },
-          },
-          images: true,
+  async update(id: string, data: UpdateProductDTO) {
+    const validation = updateProductSchema.safeParse(data);
+
+    if (validation.success === false) {
+      throw new UnprocessableEntityException(validation.error.message);
+    }
+
+    const [category, gender] = await Promise.all([
+      this.prisma.category.findUnique({
+        where: {
+          id: data.categoryId,
         },
-        orderBy: {
-          createdAt: Prisma.SortOrder.desc,
-        },
-        take,
-        skip,
       }),
-      this.client.product.count({
-        where,
+      this.prisma.gender.findUnique({
+        where: {
+          id: data.genderId,
+        },
       }),
     ]);
 
-    return {
-      items,
-      ...paginator.getInfos(total),
-    };
-  }
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    } else if (!gender) {
+      throw new NotFoundException('Gender not found');
+    }
 
-  async getById(id: string, userId?: string) {
-    console.log(userId)
+    const path = `${data.name.replace(/\s/g, '-')}-${data.sku}`;
 
-    const product = await this.client.product.findUnique({
+    return await this.prisma.product.update({
       where: {
         id,
       },
-      include: {
-        colors: true,
-        images: true,
-        quantities: true,
-      },
-    });
-
-    if (!product) {
-      throw new NotFoundException('Product not found');
-    }
-
-    let favorited = undefined;
-
-    if (userId) {
-      favorited = await this.client.product.findFirst({
-        where: {
-          id: product.id,
-          users: {
-            some: {
-              id: userId,
-            },
-          },
-        },
-      });
-    }
-
-    return {
-      ...product,
-      favorited: !!favorited,
-    };
-  }
-
-  async listFavorites(userId: string) {
-    const favorites = await this.client.product.findMany({
-      where: {
-        users: {
-          some: {
-            id: userId,
-          },
-        },
-      },
-      include: {
-        images: true,
-      },
-    });
-
-    return favorites;
-  }
-
-  async favoriteProduct(productId: string, userId: string) {
-    const product = await this.client.product.findUnique({
-      where: {
-        id: productId,
-      },
-    });
-
-    if (!product) {
-      throw new BadRequestException('Product not found');
-    }
-
-    await this.client.user.update({
-      where: {
-        id: userId,
-      },
       data: {
-        favorites: {
+        sku: data.sku,
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        discount: data.discount,
+        path,
+        category: {
           connect: {
-            id: product.id,
+            id: data.categoryId,
           },
         },
-      },
-    });
-  }
-
-  async unfavoriteProduct(productId: string, userId: string) {
-    const product = await this.client.product.findUnique({
-      where: {
-        id: productId,
-      },
-    });
-
-    if (!product) {
-      throw new BadRequestException('Product not found');
-    }
-
-    await this.client.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        favorites: {
-          disconnect: {
-            id: product.id,
-          },
-        },
-      },
-    });
-  }
-
-  async getCart(userId: string) {
-    return await this.client.cart.findMany({
-      where: {
-        userId,
-        orderId: null,
-      },
-      include: {
-        product: {
-          include: {
-            images: true,
-          },
-        },
-        color: true,
-        size: true,
-      },
-    });
-  }
-
-  async addToCart(data: AddToCartDTO, userId: string) {
-    const product = await this.client.product.findUnique({
-      where: {
-        id: data.productId,
-        quantities: {
-          some: {
-            sizeId: data.sizeId,
-          },
-        },
-        colors: {
-          some: {
-            id: data.colorId,
-          },
-        },
-      },
-      include: {
-        quantities: true,
-      },
-    });
-
-    if (!product) {
-      throw new BadRequestException('Product not found');
-    } else if (product.quantities[0].count < data.quantity) {
-      throw new BadRequestException(
-        'Quantity of products available is not enough',
-      );
-    }
-
-    const existsItemCart = await this.client.cart.findFirst({
-      where: {
-        userId,
-        productId: product.id,
-        orderId: null,
-      },
-      include: {
-        size: true,
-      },
-    });
-
-    if (existsItemCart) {
-      const availableQuantities = product.quantities.find(
-        (i) => i.sizeId === existsItemCart.sizeId,
-      ).count;
-
-      if (existsItemCart.quantity + data.quantity > availableQuantities) {
-        throw new BadRequestException({
-          message: `Quantity unavailable for ${product.name} product`,
-          productId: product.id,
-        });
-      }
-
-      await this.client.cart.update({
-        where: {
-          id: existsItemCart.id,
-        },
-        data: {
-          quantity: {
-            increment: data.quantity,
-          },
-        },
-      });
-    } else {
-      const availableQuantities = product.quantities.find((i) => {
-        return i.sizeId === data.sizeId;
-      }).count;
-
-      if (data.quantity > availableQuantities) {
-        throw new BadRequestException({
-          message: `Quantity unavailable for ${product.name} product`,
-          productId: product.id,
-        });
-      }
-
-      await this.client.cart.create({
-        data: {
-          quantity: data.quantity,
-          product: {
-            connect: {
-              id: data.productId,
-            },
-          },
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
-          color: {
-            connect: {
-              id: data.colorId,
-            },
-          },
-          size: {
-            connect: {
-              id: data.sizeId,
-            },
-          },
-        },
-      });
-    }
-  }
-
-  async removeFromCart(productId: string, userId: string) {
-    const item = await this.client.cart.findFirst({
-      where: {
-        productId,
-        userId,
-      },
-    });
-
-    if (!item) {
-      throw new BadRequestException('Item not found');
-    }
-
-    await this.client.cart.delete({
-      where: {
-        id: item.id,
-      },
-    });
-  }
-
-  async addImage(data: AddProductImageDTO) {
-    const validation = productImageSchema.safeParse(data);
-
-    if (validation.success === false) {
-      throw new UnprocessableEntityException(validation.error.issues);
-    }
-
-    const product = await this.client.product.findUnique({
-      where: {
-        id: data.productId,
-      },
-    });
-
-    if (!product) {
-      throw new NotFoundException('Product not found');
-    }
-
-    const imagesCount = await this.client.productImage.count({
-      where: {
-        productId: product.id,
-      },
-    });
-
-    return await this.client.productImage.create({
-      data: {
-        product: {
+        gender: {
           connect: {
-            id: product.id,
+            id: data.genderId,
           },
         },
-        url: validation.data.url,
-        main: imagesCount === 0,
       },
     });
   }
 
-  async setMainImage(data: SetMainImageDTO) {
-    const image = await this.client.productImage.findUnique({
+  async remove(id: string) {
+    return await this.prisma.product.delete({
       where: {
-        id: data.imageId,
-        productId: data.productId,
-      },
-    });
-
-    if (!image) {
-      throw new NotFoundException('Image not found');
-    }
-
-    const oldMainImage = await this.client.productImage.findFirst({
-      where: {
-        productId: data.productId,
-        main: true,
-      },
-    });
-
-    const [newMainImage] = await Promise.all([
-      this.client.productImage.update({
-        where: {
-          id: image.id,
-        },
-        data: {
-          main: true,
-        },
-      }),
-      this.client.productImage.update({
-        where: {
-          id: oldMainImage.id,
-        },
-        data: {
-          main: false,
-        },
-      }),
-    ]);
-
-    return newMainImage;
-  }
-
-  async deleteImage(imageId: string) {
-    const image = await this.client.productImage.findUnique({
-      where: {
-        id: imageId,
-      },
-    });
-
-    if (!image) {
-      throw new NotFoundException('Image not found');
-    } else if (image.main) {
-      throw new BadRequestException('The main image cannot be deleted');
-    }
-
-    await this.client.productImage.delete({
-      where: {
-        id: imageId,
+        id,
       },
     });
   }
