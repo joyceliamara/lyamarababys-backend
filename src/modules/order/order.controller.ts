@@ -19,39 +19,33 @@ import AuthenticatedRequest from '../../interfaces/authenticated-request';
 @Controller('order')
 @ApiBearerAuth()
 export class OrderController {
-  constructor(private readonly orderService: OrderService) {}
-
-  @Get()
-  @UseGuards(AuthGuard)
-  async list(@Req() req: AuthenticatedRequest) {
-    const { user } = req;
-
-    return this.orderService.list(user['sub']);
-  }
-
-  @Post()
-  @UseGuards(AuthGuard)
-  async create(@Req() req: AuthenticatedRequest) {
-    const { user } = req;
-
-    return await this.orderService.create(user['sub']);
-  }
-
-  @Put('status/:orderId')
-  @UseGuards(AdminGuard)
-  async updateStatus(
-    @Param('orderId') orderId: string,
-    @Body() body: UpdateOrderStatusDTO,
-  ) {
-    return await this.orderService.updateStatus(orderId, body);
-  }
-
-  @Put('tracking-code/:orderId')
-  @UseGuards(AdminGuard)
-  async updateTrackingCode(
-    @Param('orderId') orderId: string,
-    @Body() body: UpdateOrderTrackingCodeDTO,
-  ) {
-    return await this.orderService.updateTrackingCode(orderId, body);
-  }
+  // constructor(private readonly orderService: OrderService) {}
+  // @Get()
+  // @UseGuards(AuthGuard)
+  // async list(@Req() req: AuthenticatedRequest) {
+  //   const { user } = req;
+  //   return this.orderService.list(user['sub']);
+  // }
+  // @Post()
+  // @UseGuards(AuthGuard)
+  // async create(@Req() req: AuthenticatedRequest) {
+  //   const { user } = req;
+  //   return await this.orderService.create(user['sub']);
+  // }
+  // @Put('status/:orderId')
+  // @UseGuards(AdminGuard)
+  // async updateStatus(
+  //   @Param('orderId') orderId: string,
+  //   @Body() body: UpdateOrderStatusDTO,
+  // ) {
+  //   return await this.orderService.updateStatus(orderId, body);
+  // }
+  // @Put('tracking-code/:orderId')
+  // @UseGuards(AdminGuard)
+  // async updateTrackingCode(
+  //   @Param('orderId') orderId: string,
+  //   @Body() body: UpdateOrderTrackingCodeDTO,
+  // ) {
+  //   return await this.orderService.updateTrackingCode(orderId, body);
+  // }
 }

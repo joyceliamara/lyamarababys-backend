@@ -4,15 +4,15 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 import CreateProductDTO from './dtos/create-product.dto';
 import { createProductSchema } from './schemas/create-product.schema';
 import { updateProductSchema } from './schemas/update-product.schema';
 import UpdateProductDTO from './dtos/update-product.dto';
+import { PrismaService } from '../../services/prisma.service';
 
 @Injectable()
 export class ProductService {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(data: CreateProductDTO) {
     const validation = createProductSchema.safeParse(data);
@@ -20,6 +20,8 @@ export class ProductService {
     if (validation.success === false) {
       throw new UnprocessableEntityException(validation.error.message);
     }
+
+    data = validation.data as CreateProductDTO;
 
     const sdkInUse = !!(await this.prisma.product.findFirst({
       where: {
@@ -93,12 +95,14 @@ export class ProductService {
     });
   }
 
-  async update(id: string, data: UpdateProductDTO) {
+  async update(data: UpdateProductDTO) {
     const validation = updateProductSchema.safeParse(data);
 
     if (validation.success === false) {
       throw new UnprocessableEntityException(validation.error.message);
     }
+
+    data = validation.data as UpdateProductDTO;
 
     const [category, gender] = await Promise.all([
       this.prisma.category.findUnique({
@@ -123,7 +127,7 @@ export class ProductService {
 
     return await this.prisma.product.update({
       where: {
-        id,
+        id: data.id,
       },
       data: {
         sku: data.sku,
