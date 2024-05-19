@@ -69,6 +69,7 @@ model Size {
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
   quantity  Quantity[]
+  cart      Cart[]
 
   @@map("sizes")
 }
@@ -80,6 +81,7 @@ model Color {
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
   quantity  Quantity[]
+  cart      Cart[]
 
   @@map("colors")
 }
@@ -156,6 +158,11 @@ model Cart {
   productId String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
+  color     Color    @relation(fields: [colorId], references: [id])
+  colorId   String
+  size      Size     @relation(fields: [sizeId], references: [id])
+  sizeId    String
+  quantity  Int
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)

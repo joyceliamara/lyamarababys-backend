@@ -6,11 +6,18 @@ import {
   Param,
   Post,
   Put,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import CreateProductDTO from './dtos/create-product.dto';
 import UpdateProductDTO from './dtos/update-product.dto';
+import { ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from '../../guards/auth.guard';
+import AuthenticatedRequest from '../../interfaces/authenticated-request';
+import { IdentifierGuard } from '../../guards/identifier.guard';
 
+@ApiTags('Product')
 @Controller('product')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
@@ -21,13 +28,35 @@ export class ProductController {
   }
 
   @Get(':idOrPath')
-  findOne(@Param('idOrPath') idOrPath: string) {
-    return this.productService.findOne(idOrPath);
+  @UseGuards(IdentifierGuard)
+  findOne(
+    @Param('idOrPath') idOrPath: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const user = req?.user;
+
+    return this.productService.findOne(idOrPath, user?.sub);
   }
 
   @Post()
   create(@Body() body: CreateProductDTO) {
     return this.productService.create(body);
+  }
+
+  @Post('favorite/:id')
+  @UseGuards(AuthGuard)
+  favorite(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    const { user } = req;
+
+    return this.productService.favorite(user.sub, id);
+  }
+
+  @Post('unfavorite/:id')
+  @UseGuards(AuthGuard)
+  unfavorite(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    const { user } = req;
+
+    return this.productService.unfavorite(user.sub, id);
   }
 
   @Put()

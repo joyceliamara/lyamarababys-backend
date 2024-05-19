@@ -10,6 +10,8 @@ import {
 import UpdateColorDTO from '../color/dtos/update-color.dto';
 import { GenderService } from './gender.service';
 import CreateColorDTO from '../color/dtos/create-color.dto';
+import CreateGenderDTO from './dtos/create-gender.dto';
+import UpdateGenderDTO from './dtos/update-gender.dto';
 
 @Controller('gender')
 export class GenderController {
@@ -26,12 +28,12 @@ export class GenderController {
   }
 
   @Post()
-  create(@Body() data: CreateColorDTO) {
+  create(@Body() data: CreateGenderDTO) {
     return this.genderService.create(data);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() data: UpdateColorDTO) {
+  update(@Param('id') id: string, @Body() data: UpdateGenderDTO) {
     return this.genderService.update(id, data);
   }
 

@@ -9,7 +9,11 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('Lyamaras Babys')
     .setVersion('1.0')
-    .addBearerAuth()
+    .addCookieAuth('token', {
+      type: 'http',
+      in: 'cookie',
+      name: 'token',
+    })
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document, {

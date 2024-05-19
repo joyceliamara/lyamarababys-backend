@@ -9,6 +9,7 @@ import { createProductSchema } from './schemas/create-product.schema';
 import { updateProductSchema } from './schemas/update-product.schema';
 import UpdateProductDTO from './dtos/update-product.dto';
 import { PrismaService } from '../../services/prisma.service';
+import AddProductToCardDTO from './dtos/add-product-to-card.dto';
 
 @Injectable()
 export class ProductService {
@@ -80,8 +81,8 @@ export class ProductService {
     return await this.prisma.product.findMany();
   }
 
-  async findOne(idOrPath: string) {
-    return await this.prisma.product.findFirst({
+  async findOne(idOrPath: string, userId?: string) {
+    const product = await this.prisma.product.findFirst({
       where: {
         OR: [
           {
@@ -92,7 +93,43 @@ export class ProductService {
           },
         ],
       },
+      include: {
+        images: true,
+        category: true,
+        gender: true,
+        quantities: {
+          include: {
+            size: true,
+            color: true,
+          },
+        },
+      },
     });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    let favorited = false;
+
+    if (userId) {
+      const user = await this.prisma.product.findFirst({
+        where: {
+          users: {
+            some: {
+              id: userId,
+            },
+          },
+        },
+      });
+
+      favorited = !!user;
+    }
+
+    return {
+      ...product,
+      favorited,
+    };
   }
 
   async update(data: UpdateProductDTO) {
@@ -156,5 +193,113 @@ export class ProductService {
         id,
       },
     });
+  }
+
+  async favorite(userId: string, productId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: {
+        id: productId,
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        favorites: {
+          connect: {
+            id: productId,
+          },
+        },
+      },
+    });
+  }
+
+  async unfavorite(userId: string, productId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: {
+        id: productId,
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        favorites: {
+          disconnect: {
+            id: productId,
+          },
+        },
+      },
+    });
+  }
+
+  async addToCart(data: AddProductToCardDTO, userId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: {
+        id: data.productId,
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const quantity = await this.prisma.quantity.findFirst({
+      where: {
+        productId: data.productId,
+        sizeId: data.sizeId,
+        colorId: data.colorId,
+      },
+    });
+
+    if (!quantity) {
+      throw new NotFoundException('Quantity not found');
+    }
+
+    const cart = await this.prisma.cart.findFirst({
+      where: {
+        userId,
+      },
+    });
+
+    if (!cart) {
+      await this.prisma.cart.create({
+        data: {
+          user: {
+            connect: {
+              id: userId,
+            },
+          },
+          quantity: data.quantity,
+          color: {
+            connect: {
+              id: data.colorId,
+            },
+          },
+          size: {
+            connect: {
+              id: data.sizeId,
+            },
+          },
+          product: {
+            connect: {
+              id: data.productId,
+            },
+          },
+        },
+      });
+    }
   }
 }
