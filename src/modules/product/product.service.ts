@@ -10,6 +10,7 @@ import { updateProductSchema } from './schemas/update-product.schema';
 import UpdateProductDTO from './dtos/update-product.dto';
 import { PrismaService } from '../../services/prisma.service';
 import AddProductToCardDTO from './dtos/add-product-to-card.dto';
+import RemoveProductToCardDTO from './dtos/remove-product-to-card.dto';
 
 @Injectable()
 export class ProductService {
@@ -268,6 +269,51 @@ export class ProductService {
       throw new NotFoundException('Quantity not found');
     }
 
+    if (quantity.units < data.quantity) {
+      throw new ConflictException('Quantity not available');
+    }
+
+    const cart = await this.prisma.cart.findFirst({
+      where: {
+        userId,
+      },
+      include: {
+        product: true,
+        size: true,
+        color: true,
+      },
+    });
+
+    if (
+      cart &&
+      cart.productId === data.productId &&
+      cart.sizeId === data.sizeId &&
+      cart.colorId === data.colorId
+    ) {
+      await this.prisma.cart.update({
+        where: {
+          id: cart.id,
+        },
+        data: {
+          quantity: cart.quantity + data.quantity,
+        },
+      });
+
+      return;
+    }
+
+    await this.prisma.cart.create({
+      data: {
+        quantity: data.quantity,
+        userId,
+        productId: data.productId,
+        sizeId: data.sizeId,
+        colorId: data.colorId,
+      },
+    });
+  }
+
+  async removeFromCart(data: RemoveProductToCardDTO, userId: string) {
     const cart = await this.prisma.cart.findFirst({
       where: {
         userId,
@@ -275,31 +321,54 @@ export class ProductService {
     });
 
     if (!cart) {
-      await this.prisma.cart.create({
-        data: {
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
-          quantity: data.quantity,
-          color: {
-            connect: {
-              id: data.colorId,
-            },
-          },
-          size: {
-            connect: {
-              id: data.sizeId,
-            },
-          },
-          product: {
-            connect: {
-              id: data.productId,
-            },
-          },
+      throw new NotFoundException('Cart not found');
+    }
+
+    if (
+      !(
+        cart.productId === data.productId &&
+        cart.sizeId === data.sizeId &&
+        cart.colorId === data.colorId
+      )
+    ) {
+      throw new NotFoundException('Product not found in cart');
+    }
+
+    if (cart.quantity === data.quantity || data.quantity < 0) {
+      await this.prisma.cart.delete({
+        where: {
+          id: cart.id,
         },
       });
+
+      return;
     }
+
+    await this.prisma.cart.update({
+      where: {
+        id: cart.id,
+      },
+      data: {
+        quantity: cart.quantity - data.quantity,
+      },
+    });
+  }
+
+  async getCart(userId: string) {
+    return await this.prisma.cart.findMany({
+      where: {
+        userId,
+        orderId: null,
+      },
+      include: {
+        product: {
+          include: {
+            images: true,
+          },
+        },
+        size: true,
+        color: true,
+      },
+    });
   }
 }

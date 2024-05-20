@@ -16,6 +16,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../../guards/auth.guard';
 import AuthenticatedRequest from '../../interfaces/authenticated-request';
 import { IdentifierGuard } from '../../guards/identifier.guard';
+import AddProductToCardDTO from './dtos/add-product-to-card.dto';
 
 @ApiTags('Product')
 @Controller('product')
@@ -25,6 +26,14 @@ export class ProductController {
   @Get()
   findAll() {
     return this.productService.findAll();
+  }
+
+  @Get('cart')
+  @UseGuards(AuthGuard)
+  getCart(@Req() req: AuthenticatedRequest) {
+    const { user } = req;
+
+    return this.productService.getCart(user.sub);
   }
 
   @Get(':idOrPath')
@@ -57,6 +66,17 @@ export class ProductController {
     const { user } = req;
 
     return this.productService.unfavorite(user.sub, id);
+  }
+
+  @Post('cart/add')
+  @UseGuards(AuthGuard)
+  addToCart(
+    @Body() body: AddProductToCardDTO,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const { user } = req;
+
+    return this.productService.addToCart(body, user.sub);
   }
 
   @Put()
