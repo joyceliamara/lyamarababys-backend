@@ -29,7 +29,7 @@ export class UserService {
       throw new UnprocessableEntityException(validation.error.issues);
     }
 
-    const { email, password } = validation.data;
+    const { name, surname, email, password } = validation.data;
 
     const user = await this.prisma.user.findUnique({
       where: {
@@ -47,6 +47,12 @@ export class UserService {
 
     const newUser = await this.prisma.user.create({
       data: {
+        contact: {
+          create: {
+            name,
+            surname,
+          },
+        },
         email,
         password: hashSync(password, 10),
       },
