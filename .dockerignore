@@ -1,0 +1,12 @@
+node_modules
+dist
+
+*.spec.ts
+*.test.ts
+
+.editorconfig
+.eslintrc.js
+.gitignore
+.prettierrc
+docker-compose.yml
+vercel.json
