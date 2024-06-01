@@ -133,6 +133,23 @@ export class ProductService {
     };
   }
 
+  async getFavorite(userId: string) {
+    return await this.prisma.product.findMany({
+      where: {
+        users: {
+          some: {
+            id: userId,
+          },
+        },
+      },
+      include: {
+        images: true,
+        category: true,
+        gender: true,
+      },
+    });
+  }
+
   async update(data: UpdateProductDTO) {
     const validation = updateProductSchema.safeParse(data);
 

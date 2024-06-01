@@ -36,6 +36,14 @@ export class ProductController {
     return this.productService.getCart(user.sub);
   }
 
+  @Get('favorite')
+  @UseGuards(AuthGuard)
+  getFavorite(@Req() req: AuthenticatedRequest) {
+    const { user } = req;
+
+    return this.productService.getFavorite(user.sub);
+  }
+
   @Get(':idOrPath')
   @UseGuards(IdentifierGuard)
   findOne(

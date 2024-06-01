@@ -28,3 +28,6 @@ CMD ["node", "dist/main.js"]
 
 # docker build -t lyamarababys-backend:latest .
 # docker run -p 3001:3001 lyamarababys-backend:latest
+# push
+# docker tag lyamarababys-backend:latest lyamarababys/lyamarababys-backend:latest
+# docker push lyamarababys/lyamarababys-backend:latest

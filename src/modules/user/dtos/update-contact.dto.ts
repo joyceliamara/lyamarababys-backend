@@ -7,12 +7,12 @@ export default class UpdateContactDTO {
   @ApiProperty()
   surname: string;
 
-  @ApiProperty()
-  phone: string;
+  // @ApiProperty()
+  // phone: string;
 
-  @ApiProperty()
-  cpf: string;
+  // @ApiProperty()
+  // cpf: string;
 
-  @ApiProperty()
-  bornDate: string;
+  // @ApiProperty()
+  // bornDate: string;
 }

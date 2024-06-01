@@ -193,6 +193,9 @@ export class UserService {
       where: {
         userId,
       },
+      orderBy: {
+        main: 'desc',
+      },
     });
   }
 
@@ -299,7 +302,6 @@ export class UserService {
     const address = await this.prisma.address.findUnique({
       where: {
         id: addressId,
-        userId,
       },
     });
 
