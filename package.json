@@ -33,6 +33,7 @@
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.6",
     "cpf-cnpj-validator": "^1.0.3",
+    "dayjs": "^1.11.11",
     "jsonwebtoken": "^9.0.2",
     "prisma": "^5.14.0",
     "reflect-metadata": "^0.2.2",

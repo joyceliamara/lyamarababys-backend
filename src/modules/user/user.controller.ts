@@ -21,6 +21,7 @@ import CreateAddressDTO from './dtos/create-address.dto';
 import AuthenticatedRequest from '../../interfaces/authenticated-request';
 import UpdateAddressDTO from './dtos/update-address.dto';
 import { Response } from 'express';
+import dayjs from 'dayjs';
 
 @Controller('user')
 @ApiTags('User')
@@ -36,9 +37,12 @@ export class UserController {
     const result = await this.userService.create(body);
 
     res.cookie('token', result.token, {
+      expires: dayjs().add(1, 'year').toDate(),
       httpOnly: true,
       secure: true,
-      expires: new Date(Date.now() + 604800000), // 7 days
+      sameSite: 'strict',
+      domain: process.env.COOKIE_DOMAIN,
+      path: '/',
     });
 
     return result.user;
@@ -51,16 +55,14 @@ export class UserController {
   ) {
     const result = await this.userService.auth(body);
 
-    const cookieOptions = {
+    res.cookie('token', result.token, {
+      expires: body.remember ? dayjs().add(1, 'year').toDate() : undefined,
       httpOnly: true,
       secure: true,
-    };
-
-    if (body.remember) {
-      cookieOptions['expires'] = new Date(Date.now() + 604800000); // 7 days
-    }
-
-    res.cookie('token', result.token, cookieOptions);
+      sameSite: 'strict',
+      domain: process.env.COOKIE_DOMAIN,
+      path: '/',
+    });
 
     return result.user;
   }
