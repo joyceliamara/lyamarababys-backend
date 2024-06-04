@@ -12,7 +12,7 @@
       "dest": "dist/src/main.js",
       "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       "headers": {
-        "Access-Control-Allow-Origin": "https://lyamarababys.com/"
+        "Access-Control-Allow-Origin": "*"
       }
     }
   ]
