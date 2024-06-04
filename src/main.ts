@@ -22,6 +22,8 @@ async function bootstrap() {
     },
   });
 
+  console.log(process.env.FRONTEND_ORIGIN);
+
   app.enableCors({
     origin: process.env.FRONTEND_ORIGIN,
     credentials: true,
